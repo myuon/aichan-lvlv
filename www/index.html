@@ -40,19 +40,214 @@
           <span class="name">依存度</span><br>
           <i class="fa fa-heart"></i><span id="depend" class="value"></span>
         </li>
-        <li class="list-group-item">
-          <span class="name">放置時間</span><br>
-          <i class="fa fa-heart"></i><span id="interval" class="value"></span>
-        </li>
       </ul>
     </div>
   </div>
 
-  <div class="tab-content">
-    <div class="tab-pane active fade in col-md-8" id="main">
+  <div class="tab-content col-md-8">
+    <div class="tab-pane active fade in" id="main">
+      <div class="panel panel-default item-box">
+        <div class="panel-heading tooltips"><i class="fa fa-check"> アイテム一覧</i></div>
+        <ul class="list-group">
+
+          <li class="list-group-item tooltips">
+            <span class="tip">会話<br>好感度 +0.1</span>
+            <span class="count">
+              <span id="item-1-icon"><i class="fa fa-comments"></i></span> <span id="item-1-num"></span>
+            </span>
+            
+            <span id="item-1-box" class="item-list">
+            </span>
+            
+            <button type="button" id="item-1-btn" class="btn btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-1-cost">0</span> loves</button>
+          </li>
+
+          <li class="list-group-item tooltips">
+            <span class="tip">メール<br>好感度 +1.0</span>
+            <span class="count">
+              <span id="item-2-icon"><i class="fa fa-envelope"></i></span> <span id="item-2-num"></span>
+            </span>
+            
+            <span id="item-2-box" class="item-list">
+            </span>
+            
+            <button type="button" id="item-2-btn" class="btn btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-2-cost">0</span> loves</button>
+          </li>
+
+          <li class="list-group-item tooltips">
+            <span class="tip">喫茶店<br>好感度 +5.0</span>
+            <span class="count">
+              <span id="item-3-icon"><i class="fa fa-coffee"></i></span> <span id="item-3-num"></span>
+            </span>
+            
+            <span id="item-3-box" class="item-list">
+            </span>
+            
+            <button type="button" id="item-3-btn" class="btn btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-3-cost">0</span> loves</button>
+          </li>
+
+          <li class="list-group-item tooltips">
+            <span class="tip">旅行<br>好感度 +15.0</span>
+            <span class="count">
+              <span id="item-4-icon"><i class="fa fa-plane"></i></span> <span id="item-4-num"></span>
+            </span>
+            
+            <span id="item-4-box" class="item-list">
+            </span>
+            
+            <button type="button" id="item-4-btn" class="btn btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-4-cost">0</span> loves</button>
+          </li>
+
+          <li class="list-group-item tooltips">
+            <span class="tip">車<br>好感度 +50.0</span>
+            <span class="count">
+              <span id="item-5-icon"><i class="fa fa-car"></i></span> <span id="item-5-num"></span>
+            </span>
+            
+            <span id="item-5-box" class="item-list">
+            </span>
+            
+            <button type="button" id="item-5-btn" class="btn btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-5-cost">0</span> loves</button>
+          </li>
+
+          <li class="list-group-item tooltips">
+            <span class="tip">家<br>好感度 +100.0</span>
+            <span class="count">
+              <span id="item-6-icon"><i class="fa fa-home"></i></span> <span id="item-6-num"></span>
+            </span>
+            
+            <span id="item-6-box" class="item-list">
+            </span>
+            
+            <button type="button" id="item-6-btn" class="btn btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-6-cost">0</span> loves</button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="panel panel-default item-sp-box">
+        <div class="panel-heading tooltips"><i class="fa fa-exclamation-triangle"> 特殊アイテム一覧</i></div>
+        <ul class="list-group">
+          <li class="list-group-item">
+            <strong>注意</strong> 以下のアイテムの取り扱いには注意してください。
+          </li>
+
+          <li class="list-group-item tooltips">
+            <span class="tip">初期化<br>実績を除く全てのデータが初期化されます</span>
+            <span class="count">
+              <span id="item-sp-1-icon"><i class="fa fa-history"></i></span> <span id="item-sp-1-num"></span>
+            </span>
+            
+            <button type="button" id="item-sp-1-btn" class="btn btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-sp-1-cost">0</span> loves</button>
+          </li>
+        </ul>
+      </div>
     </div>
 
-    <div class="tab-pane fade col-md-8" id="stat">
+  <!--
+  <div class="tab-content col-md-8">
+    <div class="tab-pane active fade in" id="main">
+      <div id="item-1" class="panel panel-default item-box">
+        <div class="panel-heading tooltips">
+          <span class="tip">好感度 +0.1</span>
+          <i class="fa fa-check"></i> 会話
+          <button type="button" id="item-1-btn" class="btn btn-sm btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-1-cost">0</span> loves</button>
+        </div>
+        <div class="panel-body item-box">
+          <div class="count col-md-3">
+            <span id="item-1-icon"><i class="fa fa-comments"></i></span> <span id="item-1-num"></span>
+          </div>
+          <div id="item-1-box" class="item-list col-md-offset-3">
+          </div>
+        </div>
+      </div>
+
+      <div id="item-2" class="panel panel-default item-box">
+        <div class="panel-heading tooltips">
+          <span class="tip">好感度 +1.0</span>
+          <i class="fa fa-check"></i> メール
+          <button type="button" id="item-2-btn" class="btn btn-sm btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-2-cost">0</span> loves</button>
+        </div>
+        <div class="panel-body item-box">
+          <div class="count col-md-3">
+            <span id="item-2-icon"><i class="fa fa-envelope"></i></span> <span id="item-2-num"></span>
+          </div>
+          <div id="item-2-box" class="item-list col-md-offset-3">
+          </div>
+        </div>
+      </div>
+
+      <div id="item-3" class="panel panel-default item-box">
+        <div class="panel-heading tooltips">
+          <span class="tip">好感度 +10.0</span>
+          <i class="fa fa-check"></i> 喫茶店
+          <button type="button" id="item-2-btn" class="btn btn-sm btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-2-cost">0</span> loves</button>
+        </div>
+        <div class="panel-body item-box">
+          <div class="count col-md-3">
+            <span id="item-3-icon"><i class="fa fa-coffee"></i></span> <span id="item-3-num"></span>
+          </div>
+          <div id="item-3-box" class="item-list col-md-offset-3">
+          </div>
+        </div>
+      </div>
+
+      <div id="item-4" class="panel panel-default item-box">
+        <div class="panel-heading tooltips">
+          <span class="tip">好感度 +10.0</span>
+          <i class="fa fa-check"></i> 誕生日ケーキ
+          <button type="button" id="item-3-btn" class="btn btn-sm btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-3-cost">0</span> loves</button>
+        </div>
+        <div class="panel-body item-box">
+          <div class="count col-md-3">
+            <span id="item-4-icon"><i class="fa fa-birthday-cake"></i></span> <span id="item-4-num"></span>
+          </div>
+          <div id="item-4-box" class="item-list col-md-offset-3">
+          </div>
+        </div>
+      </div>
+
+      <div id="item-5" class="panel panel-default item-box">
+        <div class="panel-heading tooltips">
+          <span class="tip">好感度 +10.0</span>
+          <i class="fa fa-check"></i> 写真
+          <button type="button" id="item-5-btn" class="btn btn-sm btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-5-cost">0</span> loves</button>
+        </div>
+        <div class="panel-body item-box">
+          <div class="count col-md-5">
+            <span id="item-5-icon"><i class="fa fa-camera-retro"></i></span> <span id="item-5-num"></span>
+          </div>
+          <div id="item-5-box" class="item-list col-md-offset-3">
+          </div>
+        </div>
+      </div>
+
+      <div id="item-4" class="panel panel-default item-box">
+        <div class="panel-heading tooltips">
+          <span class="tip">好感度 +10.0</span>
+          <i class="fa fa-check"></i> 旅行
+          <button type="button" id="item-3-btn" class="btn btn-sm btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-3-cost">0</span> loves</button>
+        </div>
+        <div class="panel-body item-box">
+          <div class="count col-md-3">
+            <span id="item-4-icon"><i class="fa fa-birthday-cake"></i></span> <span id="item-4-num"></span>
+          </div>
+          <div id="item-4-box" class="item-list col-md-offset-3">
+          </div>
+        </div>
+      </div>
+
+
+      <div id="item-sp-1" class="panel panel-default item-box item-once">
+        <div class="panel-heading tooltips">
+          <span class="tip"><strong>注意</strong> 全てのデータをリセット</span>
+          <i class="fa fa-check"></i> resetter
+          <button type="button" id="item-sp-1-btn" class="btn btn-sm btn-default btn-buy"><i class="fa fa-plus-circle"></i> <span id="item-sp-1-cost">0</span> loves</button>
+        </div>
+      </div>
+    </div>
+    -->
+
+    <div class="tab-pane fade" id="stat">
       <div class="panel panel-default">
         <div class="panel-heading"><i class="fa fa-check"></i> 実績一覧</div>
         <table id="achievements" class="table table-striped">
@@ -63,6 +258,7 @@
 </div>
 
 <div id="alerts" class="col-md-4">
+
 </div>
 
 </div>

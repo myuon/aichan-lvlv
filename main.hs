@@ -27,19 +27,22 @@ getCurrentTime = read . fromJSStr <$> eval "Date.now()"
 putAlert :: String -> IO ()
 putAlert s = do
   withElem "alerts" $ \e -> do
-    k <- getProp e "innerHTML"
     t <- getCurrentTime
     setProp e "innerHTML" $ do
       printf
         "<div id=\"alert-%d\" class=\"alert alert-info fade in\" role=\"alert\">\
-        \  <button type=\"button\" class=\"close\" data-dismiss=\"alert\"><span aria-hidden=\"true\">&times;</span><span class=\"sr-only\">Close</span></button>%s</div>\
-        \%s" t s k
-    eval $ toJSString $ "$('#alert-" ++ show t ++ "').animate({ \
-      \ top: \"50px\" \
-    \ })"
+        \  <button type=\"button\" class=\"close\" data-dismiss=\"alert\"><span aria-hidden=\"true\">&times;</span><span class=\"sr-only\">Close</span></button>%s \
+        \</div>" t s
     setTimeout 5000 $ do
       eval $ toJSString $ "$('#alert-" ++ show t ++ "').alert('close')"
       return ()
+
+removeAttr :: (MonadIO m) => Elem -> String -> m ()
+removeAttr e c = liftIO $ rmc e c
+  where
+    {-# NOINLINE rmc #-}
+    rmc :: Elem -> String -> IO ()
+    rmc = ffi "(function(e,c){e.removeAttribute(c);})"
 
 def :: IO Aichan
 def = (\t -> Aichan 0 0 0 0 0 False M.empty M.empty & lastFocus .~ t) <$> getCurrentTime
@@ -131,14 +134,30 @@ achievementList = zip [1..] [
         lift $ putAlert $ "実績獲得： " ++ s
         displayTable
 
-shopItemList :: [(Int,(Int,String,StateT Aichan IO ()))]
-shopItemList = zip [1..] $ [
-  (10,"喫茶店",chocolate),
-  (10,"chocolate",chocolate)
-  ]
-  where
-    chocolate = do
-      lps += 0.5
+shopItemList :: [(Int,(Int -> Integer,StateT Aichan IO ()))]
+shopItemList = normal ++ special where
+  normal = zip [1..] $ [
+    (cost 1,booster 0.1),
+    (cost 100,booster 1),
+    (cost 1000,booster 5),
+    (cost 20000,booster 15),
+    (cost 200000,booster 50),
+    (cost 5000000,booster 100)]
+    where
+      cost b n = floor $ b * 1.5^n
+      booster n = lps += n
+
+  special = zip [-1,-2..] $ [
+    (const 10,reset)]
+    where
+      reset = do
+        d <- liftIO def
+        as <- use achieves
+        put $ d & achieves .~ as
+        displayTable
+
+shopItems :: M.IntMap (Int -> Integer,StateT Aichan IO ())
+shopItems = M.fromList shopItemList
 
 humanize :: Double -> String
 humanize n = if n <= 1000 then sepComma $ take 5 $ printf "%.2f" n else sepComma $ show $ floor n
@@ -155,7 +174,6 @@ display = do
   go "lps" =<< humanize <$> use lps
   go "loves" =<< humanize <$> use loves
   go "depend" =<< humanize <$> use depend
-  go "interval" =<< sepComma . show . fromIntegral <$> use interval
 
   where
     go :: String -> String -> StateT Aichan IO ()
@@ -167,33 +185,26 @@ displayShop :: StateT Aichan IO ()
 displayShop = do
   lvs <- use loves
   im <- use items
-  withElem "main" $ \eitem -> do
-    setProp eitem "innerHTML" ""
-    forM_ (takeWhile (\(_,(c,_,_)) -> fromIntegral c <= lvs) shopItemList) $ \(i,(c,s,m)) -> do
-      k <- getProp eitem "innerHTML"
-      let num = maybe 0 id (M.lookup i im)
-      setProp eitem "innerHTML" $ (\k0 -> k ++ k0) $
-        printf
-          " <div class=\"panel panel-default item-box\"> \
-          \ <div class=\"panel-heading\"> \
-          \   <i class=\"fa fa-check\"></i> %s \
-          \   <button type=\"button\" id=\"item-%d\" class=\"btn btn-sm btn-default btn-buy\"><i class=\"fa fa-plus-circle\"></i> %s loves</button> \
-          \ </div> \
-          \ <div class=\"panel-body item-box\"> \
-          \   <div class=\"count col-md-3\"><i class=\"fa fa-coffee\"></i> %s</div> \
-          \   <div class=\"item-list col-md-offset-3\"> \
-          \     %s \
-          \   </div> \
-          \ </div> \
-          \ </div>"
-          s i (sepComma $ show c) (sepComma $ show num)
-          (concat $ replicate num ("<i class=\"fa fa-coffee\"></i>" :: String))
+  forM_ shopItemList $ \(i,(c,m)) -> do
+    let eid = if i>0 then "item-" ++ show i else "item-sp-" ++ show (abs i)
+    let num = maybe 0 id (M.lookup i im)
 
-      --withElem ("item-" ++ show i) $ \ebtn -> do
-      --  onEvent ebtn OnClick $ \_ _ -> do
-      --    items %= M.insertWith (+) i 1
-      --    lift $ putAlert $ "アイテムを購入： " ++ s
-      --    displayTable
+    when (i>0) $ do
+      withElem (eid ++ "-box") $ \ebox -> do
+        Just e <- elemById (eid ++ "-icon")
+        i <- getProp e "innerHTML"
+        setProp ebox "innerHTML" $ concat $ replicate num i
+
+      withElem (eid ++ "-num") $ \enum -> do
+        setProp enum "innerHTML" $ show num
+
+    withElem (eid ++ "-btn") $ \ebtn -> do
+      case fromIntegral (c num) <= lvs of
+        True -> removeAttr ebtn "disabled"
+        otherwise -> setAttr ebtn "disabled" "disabled"
+
+    withElem (eid ++ "-cost") $ \ecost -> do
+      setProp ecost "innerHTML" $ sepComma $ show $ c num
 
 displayTable :: StateT Aichan IO ()
 displayTable = do
@@ -212,7 +223,7 @@ displayTable = do
 update :: StateT Aichan IO ()
 update = do
   ai <- get
-  loves += (ai^.lps)*(ai^.depend)/fps
+  loves += (ai^.lps)/fps
   f' <- lift docFocused
   case f' of
     True -> do
@@ -223,7 +234,7 @@ update = do
         lift $ putAlert $ "放置期間 +" ++ show k
     False -> do
       let p = fromIntegral (ai^.interval)/1000/60/120
-      depend %= (\x -> (x-p) `max` 1)
+      depend %= (\x -> (x-p) `max` 0)
       lps += p
   hasFocus .= f'
   achievesCheck
@@ -256,7 +267,7 @@ main = do
       old <- use lastFocus
       lastFocus .= now
       i <- use interval
-      interval .= div (now-old+i*2) 3
+      interval .= (now-old)
   print q1
 
   q2 <- loopStateT (saveInterval * 1000) ref $ do
@@ -268,10 +279,35 @@ main = do
   --  onEvent e OnClick $ \_ _ -> do
   --    writeIORef ref =<< def
   --    writeIORef ref =<< execStateT displayTable =<< readIORef ref
+  btnEvents ref [1..]
+  btnEvents ref [-1,-2..]
+
+btnEvents :: IORef Aichan -> [Int] -> IO ()
+btnEvents ref (i:is) = do
+  ei <- if i>0
+    then elemById $ "item-" ++ show i ++ "-btn"
+    else elemById $ "item-sp-" ++ show (abs i) ++ "-btn"
+  case ei of
+    Just ebtn -> do
+      onEvent ebtn OnClick $ \_ _ -> do
+        refStateT ref $ do
+          items %= M.insertWith (+) i 1
+          let (c,m) = shopItems M.! i
+          num <- (M.! i) <$> use items
+          loves -= fromIntegral (c $ num-1)
+          m
+--          lift $ putAlert $ "アイテムを購入： " ++ s
+          displayTable
+        writeLog . show =<< readIORef ref
+      btnEvents ref is
+    Nothing -> return ()
+
+refStateT :: IORef s -> StateT s IO () -> IO ()
+refStateT ref m = do
+  writeIORef ref =<< execStateT m =<< readIORef ref
 
 loopStateT :: Int -> IORef s -> StateT s IO () -> IO s
 loopStateT c ref m = do
-  writeIORef ref =<< execStateT m =<< readIORef ref
+  refStateT ref m
   setTimeout c $ void $ loopStateT c ref m
   readIORef ref
-
