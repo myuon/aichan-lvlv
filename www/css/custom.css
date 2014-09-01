@@ -1,51 +1,108 @@
 @import url(http://fonts.googleapis.com/css?family=Merriweather);
+html {
+  overflow-y: scroll; }
+
+body {
+  font-family: 'Merriweather','Lucida Grande', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; }
+
+@media (min-width: 768px) {
+  .container-fluid {
+    width: 80%;
+    margin-left: 120px; } }
+*:hover {
+  -webkit-transition: 0.3s;
+  -moz-transition: 0.3s;
+  -ms-transition: 0.3s;
+  -o-transition: 0.3s;
+  transition: 0.3s; }
+
+a {
+  color: #ffbb66; }
+  a:hover {
+    color: #776644; }
+
+.panel .panel-heading {
+  background-color: #ffeeaa;
+  color: #110000; }
 
 header {
   border-bottom: 1px solid #eee;
   padding-bottom: 10px;
   margin-bottom: 20px;
-  padding-top: 0;
-}
-
-* {
-  font-family: 'Merriweather','Lucida Grande','Hiragino Kaku Gothic ProN',
-    Meiryo, sans-serif;
-}
-
-.container {
-  width: 80%;
-}
+  padding-top: 0; }
 
 #tabs {
-  margin-bottom: 20px;
-}
+  margin-bottom: 20px; }
+  #tabs .nav {
+    border-bottom: 1px solid #eee; }
+    #tabs .nav > li {
+      float: left;
+      margin-bottom: -1px; }
+    #tabs .nav li a {
+      color: #aaa;
+      border-radius: 2.5px; }
+      #tabs .nav li a a:hover {
+        color: #000;
+        background-color: #eee; }
+    #tabs .nav li.active {
+      border-bottom: 2px solid #88ccaa; }
+      #tabs .nav li.active a {
+        color: #66aa88; }
+      #tabs .nav li.active a:hover,
+      #tabs .nav li.active a:focus {
+        background-color: #fff; }
+
+#display .list-group .name {
+  font-size: 15px; }
+#display .list-group i, #display .list-group .value {
+  color: #ffaaaa; }
+#display .list-group .value {
+  font-size: 24px;
+  line-height: 1.2em; }
+#display .list-group i {
+  font-size: 20px;
+  margin-right: 5px; }
+
+#stat table th, #stat table td {
+  padding-left: 15px; }
+#stat table th {
+  color: #776644; }
+#stat .table-striped > tbody > tr:nth-child(2n+1) > td {
+  background-color: #f9f9f9; }
+
+#main .item-box .btn {
+  background-color: #88ccaa;
+  border-color: #66aa88;
+  color: #fff;
+  font-weight: bold; }
+  #main .item-box .btn:hover {
+    background-color: #77bb99; }
+#main .item-box .count {
+  font-size: 20px;
+  color: #ffaaaa;
+  padding-left: 0px; }
+  #main .item-box .count i {
+    border-radius: 50%;
+    font-size: 13px;
+    border: 5px solid #ffaaaa;
+    background-color: #ffaaaa;
+    color: #fff; }
+#main .item-box .item-list i {
+  border-radius: 50%;
+  font-size: 20px;
+  border: 5px solid #ffaaaa;
+  background-color: #ffaaaa;
+  color: #fff;
+  margin-bottom: 5px; }
+#main .item-box .btn-buy {
+  float: right;
+  margin-top: -5px; }
 
 #alerts {
-  position: absolute;
-  width: 400px;
-  bottom: 5px;
-}
-
-#display div {
-  margin: 10px;
-}
-
-#display .name {
-  font-size: 15px;
-}
-
-#display .value,
-#display .glyphicon {
-  color: #faa;
-}
-
-#display .value {
-  font-size: 32px;
-  line-height: 1.2em;
-}
-
-#display .glyphicon {
-  font-size: 24px;
-  margin-right: 5px;
-}
-
+  position: fixed;
+  bottom: 15px;
+  right: 15px; }
+  #alerts .alert {
+    background-color: #ffeeaa;
+    border-color: #ccbb77;
+    color: #776644; }
