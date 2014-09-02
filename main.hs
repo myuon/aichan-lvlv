@@ -1,9 +1,10 @@
-{-# LANGUAGE ImpredicativeTypes, OverloadedStrings #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 import Haste
 import Haste.Foreign
 import Haste.Serialize
 import Haste.JSON
 import Haste.LocalStorage
+import qualified Haste.Perch as P
 import Control.Monad
 import Control.Monad.State
 import Control.Applicative
@@ -11,6 +12,8 @@ import Data.List
 import Data.IORef
 import qualified Data.IntMap as M
 import Text.Printf
+import Numeric
+
 import Lens
 
 fps = 30.0
@@ -22,7 +25,7 @@ setTitle :: String -> IO ()
 setTitle t = void $ eval $ toJSString $ "document.title = " ++ show t
 
 getCurrentTime :: IO Integer
-getCurrentTime = read . fromJSStr <$> eval "Date.now()"
+getCurrentTime = read . fromJSStr <$> (eval . toJSString) "Date.now()"
 
 putAlert :: String -> IO ()
 putAlert s = do
@@ -42,15 +45,15 @@ removeAttr e c = liftIO $ rmc e c
   where
     {-# NOINLINE rmc #-}
     rmc :: Elem -> String -> IO ()
-    rmc = ffi "(function(e,c){e.removeAttribute(c);})"
+    rmc = ffi $ toJSString "(function(e,c){e.removeAttribute(c);})"
 
 def :: IO Aichan
 def = (\t -> Aichan 0 0 0 0 0 False M.empty M.empty & lastFocus .~ t) <$> getCurrentTime
 
 docFocused :: IO Bool
 docFocused = do
-  f <- eval "document.hasFocus()"
-  return $ case f of
+  f <- eval $ toJSString "document.hasFocus()"
+  return $ case show f of
     "true" -> True
     "false" -> False
     z -> error $ "docFocused: " ++ show z
@@ -67,14 +70,15 @@ data Aichan = Aichan {
   } deriving (Eq, Show)
 
 instance Serialize Aichan where
-  toJSON (Aichan ls lp d f _ _ as is) = Dict $ [("loves",toJSON ls),("lps",toJSON lp),("depend",toJSON d),("lastFocus",toJSON $ show f),("achievements",toJSON $ M.assocs as),("items",toJSON $ M.assocs is)]
+  toJSON (Aichan ls lp d f _ _ as is) = Dict $ fmap (\(x,y) -> (toJSString x,y)) $
+    [("loves",toJSON ls),("lps",toJSON lp),("depend",toJSON d),("lastFocus",toJSON $ show f),("achievements",toJSON $ M.assocs as),("items",toJSON $ M.assocs is)]
   parseJSON z = do
-    ls <- z .: "loves"
-    lp <- z .: "lps"
-    d <- z .: "depend"
-    f <- read <$> z .: "lastFocus"
-    as <- M.fromList <$> z .: "achievements"
-    is <- M.fromList <$> z .: "items"
+    ls <- z .: toJSString "loves"
+    lp <- z .: toJSString "lps"
+    d <- z .: toJSString "depend"
+    f <- read <$> z .: toJSString "lastFocus"
+    as <- M.fromList <$> z .: toJSString "achievements"
+    is <- M.fromList <$> z .: toJSString "items"
     return $ Aichan ls lp d f 0 False as is
 
 -- makeLenses
@@ -82,7 +86,7 @@ loves :: Lens' Aichan Double; loves = lens _loves (\p x -> p { _loves = x })
 lps :: Lens' Aichan Double; lps = lens _lps (\p x -> p { _lps = x })
 depend :: Lens' Aichan Double; depend = lens _depend (\p x -> p { _depend = x })
 lastFocus :: Lens' Aichan Integer; lastFocus = lens _lastFocus (\p x -> p { _lastFocus = x })
-interval :: Lens' Aichan Integer; interval = lens _interval (\p x -> p { _interval = x })
+--interval :: Lens' Aichan Integer; interval = lens _interval (\p x -> p { _interval = x })
 hasFocus :: Lens' Aichan Bool; hasFocus = lens _hasFocus (\p x -> p { _hasFocus = x })
 achieves :: Lens' Aichan (M.IntMap (Maybe String)); achieves = lens _achieves (\p x -> p { _achieves = x })
 items :: Lens' Aichan (M.IntMap Int); items = lens _items (\p x -> p { _items = x })
@@ -134,30 +138,58 @@ achievementList = zip [1..] [
         lift $ putAlert $ "実績獲得： " ++ s
         displayTable
 
-shopItemList :: [(Int,(Int -> Integer,StateT Aichan IO ()))]
+type Item = (Int -> Integer,Int -> StateT Aichan IO (),(String,String,String))
+
+shopItemList :: [(Int,Item)]
 shopItemList = normal ++ special where
   normal = zip [1..] $ [
-    (cost 1,booster 0.1),
-    (cost 100,booster 1),
-    (cost 1000,booster 5),
-    (cost 20000,booster 15),
-    (cost 200000,booster 50),
-    (cost 5000000,booster 100)]
+    (cost 1,booster 0.1,("fa-comments-o","会話<br>好感度 +0.1","")),
+    (cost 100,booster 1,("fa-envelope","メール<br>好感度 +1.0","")),
+    (cost 1000,booster 5,("fa-coffee","喫茶店<br>好感度 +5.0","")),
+    (cost 20000,booster 15,("fa-plane","旅行<br>好感度 +15.0","")),
+    (cost 200000,booster 50,("fa-car","車<br>好感度 +50.0","")),
+    (cost 5000000,booster 100,("fa-home","家<br>好感度 +100.0",""))]
     where
       cost b n = floor $ b * 1.5^n
-      booster n = lps += n
+      booster n _ = lps += n
 
   special = zip [-1,-2..] $ [
-    (const 10,reset)]
+    (const 0,disp "monitor",("fa-power-off","さぁ始めよう<br>ゲームを始めましょう。右のボタンからこのアイテムを購入してください。","さぁ始めよう")),
+    (const 1,disp "item-shop",("fa-shopping-cart","アイテムショップ<br>アイテムが購入できるようになります。","アイテムショップ")),
+    (const 10,reset,("fa-history","初期化<br>実績を除く全てのデータが初期化されます","初期化")),
+    (const 100,resetAll,("fa-trash","データの消去<br>全てのデータが消去されます。この操作は取り消せません。","データの消去"))]
     where
-      reset = do
+      disp k i = do
+        withElem k $ \e -> setStyle e "display" "block"
+      resetAll _ = liftIO def >>= put >> displayTable
+      reset _ = do
         d <- liftIO def
         as <- use achieves
         put $ d & achieves .~ as
         displayTable
 
-shopItems :: M.IntMap (Int -> Integer,StateT Aichan IO ())
+shopItems :: M.IntMap Item
 shopItems = M.fromList shopItemList
+
+itemLi :: Int -> String -> String -> String -> P.Perch
+itemLi i icon tips box = do
+  let p = "item-" ++ (if i>0 then show i else "sp-" ++ show (abs i))
+  P.li P.! P.atr "class" "list-group-item tooltips" $ do
+    P.span P.! P.atr "class" "tip" $ do
+      P.setHtml P.this tips
+    P.span P.! P.atr "class" "count" $ do
+      P.span P.! P.atr "id" (p ++ "-icon") $ do
+        P.i P.! P.atr "class" ("fa " ++ icon) $ ""
+        P.toElem " "
+      P.span P.! P.atr "id" (p ++ "-num") $ ""
+
+    P.span P.! P.atr "id" (p ++ "-box") P.! P.atr "class" "item-list" $ box
+
+    P.button P.! P.atr "type" "button" P.! P.atr "id" (p ++ "-btn") P.! P.atr "class" "btn btn-default btn-buy" $ do
+      P.i P.! P.atr "class" "fa fa-plus-circle" $ ""
+      P.toElem " "
+      P.span P.! P.atr "id" (p ++ "-cost") $ "0"
+      P.toElem " loves"
 
 humanize :: Double -> String
 humanize n = if n <= 1000 then sepComma $ take 5 $ printf "%.2f" n else sepComma $ show $ floor n
@@ -185,7 +217,7 @@ displayShop :: StateT Aichan IO ()
 displayShop = do
   lvs <- use loves
   im <- use items
-  forM_ shopItemList $ \(i,(c,m)) -> do
+  forM_ shopItemList $ \(i,(c,m,_)) -> do
     let eid = if i>0 then "item-" ++ show i else "item-sp-" ++ show (abs i)
     let num = maybe 0 id (M.lookup i im)
 
@@ -193,13 +225,17 @@ displayShop = do
       withElem (eid ++ "-box") $ \ebox -> do
         Just e <- elemById (eid ++ "-icon")
         i <- getProp e "innerHTML"
-        setProp ebox "innerHTML" $ concat $ replicate num i
+        let cs = [500,100,50,10,5,1]
+        let ds = zip cs $ reverse $ snd $ foldl' (\(n,as) a -> (n`mod`a,(n`div`a) : as)) (num,[]) cs
+        setProp ebox "innerHTML" $
+          foldl' (\b (n,k) -> printf "%s<span class=\"item-%d\">%s</span>" b n $ concat $ replicate k i) "" ds
 
       withElem (eid ++ "-num") $ \enum -> do
         setProp enum "innerHTML" $ show num
 
+    let cond = if i>0 then True else M.notMember i im || im M.! i < 1
     withElem (eid ++ "-btn") $ \ebtn -> do
-      case fromIntegral (c num) <= lvs of
+      case cond && fromIntegral (c num) <= lvs of
         True -> removeAttr ebtn "disabled"
         otherwise -> setAttr ebtn "disabled" "disabled"
 
@@ -225,17 +261,27 @@ update = do
   ai <- get
   loves += (ai^.lps)/fps
   f' <- lift docFocused
+  now <- liftIO getCurrentTime
+  let diff = fromIntegral $ now - (ai^.lastFocus)
+
   case f' of
     True -> do
-      depend += (fromIntegral (ai^.interval)/1000/60/15)
+      depend += (diff/1000/60/60/100)
       f <- use hasFocus
       when (f == False) $ do
-        k <- use interval
-        lift $ putAlert $ "放置期間 +" ++ show k
-    False -> do
-      let p = fromIntegral (ai^.interval)/1000/60/120
+        let bonus = diff/1000/60/10
+        depend += bonus
+        lift $ putAlert $ "再会ボーナス<br>依存度 +" ++ humanize bonus
+
+      let p = diff/1000/60/60/120
       depend %= (\x -> (x-p) `max` 0)
       lps += p
+
+    False -> do
+      let p = diff/1000/60/60/10
+      depend %= (\x -> (x-p) `max` 0)
+      when ((ai^.depend) > 0) $
+        lps += p
   hasFocus .= f'
   achievesCheck
   where
@@ -253,6 +299,24 @@ loadItem s a = do
 
 main = do
   ref <- loadItem saveName =<< def
+  let (a,b) = partition ((>0) . fst) shopItemList
+  withElem "list-group" $ \e -> do
+    forM_ a $ \(i,(_,_,(icon,tip,box))) -> do
+      P.build (itemLi i icon tip box) e
+  withElem "list-sp-group" $ \e -> do
+    forM_ b $ \(i,(_,_,(icon,tip,box))) -> do
+      P.build (itemLi i icon tip box) e
+
+  btnEvents ref [1..]
+  btnEvents ref [-1,-2..]
+
+  let recover = [-1,-2]
+  forM_ recover $ \i -> do
+    let (_,m,_) = shopItems M.! i
+    refStateT ref $ do
+      im <- use items
+      when (M.member i im && im M.! i > 0) $ m i
+
   q <- loopStateT (floor $ 1000/fps) ref $ do
     update
     display
@@ -261,13 +325,6 @@ main = do
   
   q1 <- loopStateT (floor $ 1000/titleFps) ref $ do
     lift . setTitle =<< printf "%.2f" <$> use loves
-    b <- use hasFocus
-    when b $ do
-      now <- lift getCurrentTime
-      old <- use lastFocus
-      lastFocus .= now
-      i <- use interval
-      interval .= (now-old)
   print q1
 
   q2 <- loopStateT (saveInterval * 1000) ref $ do
@@ -275,13 +332,6 @@ main = do
     displayTable
   print q2
   
-  --withElem "reset" $ \e -> do
-  --  onEvent e OnClick $ \_ _ -> do
-  --    writeIORef ref =<< def
-  --    writeIORef ref =<< execStateT displayTable =<< readIORef ref
-  btnEvents ref [1..]
-  btnEvents ref [-1,-2..]
-
 btnEvents :: IORef Aichan -> [Int] -> IO ()
 btnEvents ref (i:is) = do
   ei <- if i>0
@@ -292,11 +342,10 @@ btnEvents ref (i:is) = do
       onEvent ebtn OnClick $ \_ _ -> do
         refStateT ref $ do
           items %= M.insertWith (+) i 1
-          let (c,m) = shopItems M.! i
+          let (c,m,_) = shopItems M.! i
           num <- (M.! i) <$> use items
           loves -= fromIntegral (c $ num-1)
-          m
---          lift $ putAlert $ "アイテムを購入： " ++ s
+          m i
           displayTable
         writeLog . show =<< readIORef ref
       btnEvents ref is

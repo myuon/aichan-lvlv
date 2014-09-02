@@ -10,11 +10,11 @@ body {
     width: 80%;
     margin-left: 120px; } }
 *:hover {
-  -webkit-transition: 0.3s;
-  -moz-transition: 0.3s;
-  -ms-transition: 0.3s;
-  -o-transition: 0.3s;
-  transition: 0.3s; }
+  -webkit-transition: all ease 0.3s;
+  -moz-transition: all ease 0.3s;
+  -ms-transition: all ease 0.3s;
+  -o-transition: all ease 0.3s;
+  transition: all ease 0.3s; }
 
 a {
   color: #ffbb66; }
@@ -52,16 +52,302 @@ header {
       #tabs .nav li.active a:focus {
         background-color: #fff; }
 
+#display #monitor {
+  display: none; }
 #display .list-group .name {
   font-size: 15px; }
 #display .list-group i, #display .list-group .value {
   color: #ffaaaa; }
 #display .list-group .value {
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1.2em; }
 #display .list-group i {
-  font-size: 20px;
-  margin-right: 5px; }
+  border-radius: 50%;
+  font-size: 13px;
+  color: #fff;
+  border: 5px solid #ffaaaa;
+  background-color: #ffaaaa;
+  margin-right: 5px;
+  display: inline-block;
+  width: 23px;
+  text-align: center; }
+
+#aichan-img {
+  background-image: url("../img/aichan.png"); }
+  #aichan-img, #aichan-img .eye {
+    display: block;
+    width: 266px;
+    height: 410px;
+    margin: auto;
+    padding: 0; }
+  #aichan-img .eye:not(:hover) {
+    -webkit-opacity: 0;
+    -moz-opacity: 0;
+    -ms-opacity: 0;
+    -o-opacity: 0;
+    opacity: 0;
+    -webkit-animation: mepachi 4s linear infinite;
+    -moz-animation: mepachi 4s linear infinite;
+    -ms-animation: mepachi 4s linear infinite;
+    -o-animation: mepachi 4s linear infinite;
+    animation: mepachi 4s linear infinite; }
+  #aichan-img:hover {
+    -webkit-animation: yure 1s linear 1;
+    -moz-animation: yure 1s linear 1;
+    -ms-animation: yure 1s linear 1;
+    -o-animation: yure 1s linear 1;
+    animation: yure 1s linear 1;
+    -webkit-transform-origin: 130px 400px;
+    -moz-transform-origin: 130px 400px;
+    -ms-transform-origin: 130px 400px;
+    -o-transform-origin: 130px 400px;
+    transform-origin: 130px 400px; }
+  #aichan-img:hover .eye, #aichan-img .eye:hover .eye {
+    opacity: 1; }
+
+@-webkit-keyframes mepachi {
+  0% {
+    opacity: 1; }
+
+  2% {
+    opacity: 1; }
+
+  3% {
+    opacity: 0; }
+
+  6% {
+    opacity: 0; }
+
+  7% {
+    opacity: 1; }
+
+  9% {
+    opacity: 1; }
+
+  10% {
+    opacity: 0; }
+
+  100% {
+    opacity: 0; } }
+
+@-moz-keyframes mepachi {
+  0% {
+    opacity: 1; }
+
+  2% {
+    opacity: 1; }
+
+  3% {
+    opacity: 0; }
+
+  6% {
+    opacity: 0; }
+
+  7% {
+    opacity: 1; }
+
+  9% {
+    opacity: 1; }
+
+  10% {
+    opacity: 0; }
+
+  100% {
+    opacity: 0; } }
+
+@-o-keyframes mepachi {
+  0% {
+    opacity: 1; }
+
+  2% {
+    opacity: 1; }
+
+  3% {
+    opacity: 0; }
+
+  6% {
+    opacity: 0; }
+
+  7% {
+    opacity: 1; }
+
+  9% {
+    opacity: 1; }
+
+  10% {
+    opacity: 0; }
+
+  100% {
+    opacity: 0; } }
+
+@keyframes mepachi {
+  0% {
+    opacity: 1; }
+
+  2% {
+    opacity: 1; }
+
+  3% {
+    opacity: 0; }
+
+  6% {
+    opacity: 0; }
+
+  7% {
+    opacity: 1; }
+
+  9% {
+    opacity: 1; }
+
+  10% {
+    opacity: 0; }
+
+  100% {
+    opacity: 0; } }
+
+@-webkit-keyframes yure {
+  0% {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg); }
+
+  25% {
+    -webkit-transform: rotate(2deg);
+    -moz-transform: rotate(2deg);
+    -ms-transform: rotate(2deg);
+    -o-transform: rotate(2deg);
+    transform: rotate(2deg); }
+
+  50% {
+    -webkit-transform: rotate(-2deg);
+    -moz-transform: rotate(-2deg);
+    -ms-transform: rotate(-2deg);
+    -o-transform: rotate(-2deg);
+    transform: rotate(-2deg); }
+
+  75% {
+    -webkit-transform: rotate(2deg);
+    -moz-transform: rotate(2deg);
+    -ms-transform: rotate(2deg);
+    -o-transform: rotate(2deg);
+    transform: rotate(2deg); }
+
+  100% {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg); } }
+
+@-moz-keyframes yure {
+  0% {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg); }
+
+  25% {
+    -webkit-transform: rotate(2deg);
+    -moz-transform: rotate(2deg);
+    -ms-transform: rotate(2deg);
+    -o-transform: rotate(2deg);
+    transform: rotate(2deg); }
+
+  50% {
+    -webkit-transform: rotate(-2deg);
+    -moz-transform: rotate(-2deg);
+    -ms-transform: rotate(-2deg);
+    -o-transform: rotate(-2deg);
+    transform: rotate(-2deg); }
+
+  75% {
+    -webkit-transform: rotate(2deg);
+    -moz-transform: rotate(2deg);
+    -ms-transform: rotate(2deg);
+    -o-transform: rotate(2deg);
+    transform: rotate(2deg); }
+
+  100% {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg); } }
+
+@-o-keyframes yure {
+  0% {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg); }
+
+  25% {
+    -webkit-transform: rotate(2deg);
+    -moz-transform: rotate(2deg);
+    -ms-transform: rotate(2deg);
+    -o-transform: rotate(2deg);
+    transform: rotate(2deg); }
+
+  50% {
+    -webkit-transform: rotate(-2deg);
+    -moz-transform: rotate(-2deg);
+    -ms-transform: rotate(-2deg);
+    -o-transform: rotate(-2deg);
+    transform: rotate(-2deg); }
+
+  75% {
+    -webkit-transform: rotate(2deg);
+    -moz-transform: rotate(2deg);
+    -ms-transform: rotate(2deg);
+    -o-transform: rotate(2deg);
+    transform: rotate(2deg); }
+
+  100% {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg); } }
+
+@keyframes yure {
+  0% {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg); }
+
+  25% {
+    -webkit-transform: rotate(2deg);
+    -moz-transform: rotate(2deg);
+    -ms-transform: rotate(2deg);
+    -o-transform: rotate(2deg);
+    transform: rotate(2deg); }
+
+  50% {
+    -webkit-transform: rotate(-2deg);
+    -moz-transform: rotate(-2deg);
+    -ms-transform: rotate(-2deg);
+    -o-transform: rotate(-2deg);
+    transform: rotate(-2deg); }
+
+  75% {
+    -webkit-transform: rotate(2deg);
+    -moz-transform: rotate(2deg);
+    -ms-transform: rotate(2deg);
+    -o-transform: rotate(2deg);
+    transform: rotate(2deg); }
+
+  100% {
+    -webkit-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    transform: rotate(0deg); } }
 
 #stat table th, #stat table td {
   padding-left: 15px; }
@@ -97,6 +383,8 @@ header {
     border-right: 8px solid transparent;
     border-left: 8px solid transparent; }
 
+#main #item-shop {
+  display: none; }
 #main .item-sp-box .panel-heading {
   background-color: #ffddcc; }
 #main .item-box .count,
@@ -115,7 +403,10 @@ header {
     font-size: 13px;
     color: #fff;
     border: 5px solid #ffaaaa;
-    background-color: #ffaaaa; }
+    background-color: #ffaaaa;
+    display: inline-block;
+    width: 23px;
+    text-align: center; }
 #main .item-box .item-list i,
 #main .item-sp-box .item-list i {
   border-radius: 50%;
@@ -123,6 +414,30 @@ header {
   background-color: #ffaaaa;
   color: #fff;
   margin-bottom: 5px; }
+#main .item-box .item-1 i,
+#main .item-sp-box .item-1 i {
+  font-size: 10px; }
+#main .item-box .item-5 i,
+#main .item-sp-box .item-5 i {
+  font-size: 10px;
+  border: 5px solid #dd8888;
+  background-color: #dd8888; }
+#main .item-box .item-10 i,
+#main .item-sp-box .item-10 i {
+  font-size: 13px; }
+#main .item-box .item-50 i,
+#main .item-sp-box .item-50 i {
+  font-size: 13px;
+  border: 5px solid #dd8888;
+  background-color: #dd8888; }
+#main .item-box .item-100 i,
+#main .item-sp-box .item-100 i {
+  font-size: 16px; }
+#main .item-box .item-500 i,
+#main .item-sp-box .item-500 i {
+  font-size: 16px;
+  border: 5px solid #dd8888;
+  background-color: #dd8888; }
 #main .item-box .btn-buy,
 #main .item-sp-box .btn-buy {
   float: right;
