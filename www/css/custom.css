@@ -383,6 +383,8 @@ header {
     border-right: 8px solid transparent;
     border-left: 8px solid transparent; }
 
+#main #list-group > li, #main #list-sp-group > li:not(:first-child) {
+  display: none; }
 #main #item-shop {
   display: none; }
 #main .item-sp-box .panel-heading {

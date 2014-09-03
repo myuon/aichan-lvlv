@@ -40,3 +40,5 @@ l += x = l %= (+x)
 (-=) :: (Monad m, Num a) => Lens' s a -> a -> StateT s m ()
 l -= x = l %= (subtract x)
 
+(<~) :: (Monad m) => Lens' s a -> StateT s m a -> StateT s m ()
+l <~ m = m >>= \x -> l .= x
