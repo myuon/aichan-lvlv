@@ -1,5 +1,4 @@
 愛ちゃんのラブラブ放置プレイ
 ===========
 
-http://github.io/myuon/aichan-lvlv/index.html
-
+https://myuon.github.io/aichan-lvlv/index.html

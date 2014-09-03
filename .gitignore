@@ -3,4 +3,6 @@ cabal.sandbox.config
 *.hi
 *.o
 main/
+.sass-cache/
+www/
 
