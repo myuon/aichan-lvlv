@@ -1,7 +1,0 @@
-.cabal-sandbox/
-cabal.sandbox.config
-*.hi
-*.o
-main/
-www/
-.sass-cache/
