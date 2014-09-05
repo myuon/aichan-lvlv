@@ -20,6 +20,10 @@ l .~ b = runIdentity . l (\_ -> Identity b)
 (%~) :: Lens s t a b -> (a -> b) -> s -> t
 l %~ f = runIdentity . l (Identity . f)
 
+(?~) :: Lens' s a -> Maybe a -> s -> s
+s ?~ (Just l) = s .~ l
+s ?~ Nothing = id
+
 infixl 5 &
 (&) :: a -> (a -> b) -> b
 (&) = flip ($)

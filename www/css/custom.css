@@ -36,7 +36,8 @@ header {
   padding-top: 0; }
 
 #tabs {
-  margin-bottom: 20px; }
+  margin-bottom: 20px;
+  font-family: serif; }
   #tabs .nav {
     border-bottom: 1px solid #eee; }
     #tabs .nav > li {
@@ -55,6 +56,8 @@ header {
       #tabs .nav li.active a:hover,
       #tabs .nav li.active a:focus {
         background-color: #fff; }
+      #tabs .nav li.active .badge {
+        background-color: #88ccaa; }
 
 #display #monitor {
   display: none; }
@@ -463,11 +466,34 @@ header {
   #main .item-sp-box .btn:hover {
     background-color: #ee7755; }
 
+#log #log-group {
+  max-height: 800px;
+  overflow: auto; }
+
 #alerts {
-  position: fixed;
-  top: 50px;
-  right: 15px; }
-  #alerts .alert {
-    background-color: #ffeeaa;
-    border-color: #ccbb77;
-    color: #776644; }
+  position: relative;
+  left: 0;
+  top: -150px; }
+  #alerts div.tip {
+    color: #fff;
+    background: #000;
+    border-color: #000;
+    border-radius: 6px;
+    padding: 10px 15px;
+    position: absolute;
+    opacity: 0.8;
+    z-index: 999;
+    width: 100%; }
+  #alerts div.tip:after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 15px;
+    margin-left: -8px;
+    width: 0;
+    height: 0;
+    border-bottom: 8px solid #000000;
+    border-right: 8px solid transparent;
+    border-left: 8px solid transparent; }
+  #alerts button {
+    color: #fff; }

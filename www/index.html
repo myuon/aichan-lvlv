@@ -21,7 +21,8 @@
   <div id="tabs" class="col-md-12">
     <ul class="nav" role="tablist">
       <li class="active"><a href="#main" role="tab" data-toggle="tab"><i class="fa fa-plus-square"></i> アイテム</a></li>
-      <li><a href="#stat" role="tab" data-toggle="tab"><i class="fa fa-list"></i> 実績一覧</a></li>
+      <li><a href="#stat" role="tab" data-toggle="tab"><i class="fa fa-flag"></i> 実績一覧</a></li>
+      <li><a href="#log" role="tab" data-toggle="tab"><i class="fa fa-list"></i> ログ <span id="unread-badge" class="badge"></span></a></li>
     </ul>
   </div>
 
@@ -45,8 +46,13 @@
       </ul>
     </div>
 
-    <div id="aichan-img" class="col-md-4">
-      <img src="img/aichan_sm.png" class="eye">
+    <div>
+      <div id="aichan-img">
+        <img src="img/aichan_sm.png" class="eye">
+      </div>
+
+      <div id="alerts">
+      </div>
     </div>
   </div>
 
@@ -75,11 +81,20 @@
         </table>
       </div>
     </div>
+
+    <div class="tab-pane fade" id="log">
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-check"></i> ログ一覧</div>
+        <ul id="log-group" class="list-group">
+          <li class="list-group-item">
+            <strong>発言者 (time)</strong>
+            <span>ここにログの内容が表示されます</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
   </div>
-</div>
-
-<div id="alerts" class="col-md-4">
-
 </div>
 
 </div>
