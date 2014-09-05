@@ -91,7 +91,7 @@ putLog person s = do
       | otherwise = s:replace x y ss
 
 def :: IO Aichan
-def = (\t -> Aichan 0 0 0 0 False IM.empty IM.empty 0 1 1 & lastFocus .~ t) <$> getCurrentTime
+def = (\t -> Aichan 0 0 0 0 False M.empty IM.empty 0 1 1 & lastFocus .~ t) <$> getCurrentTime
 
 docFocused :: IO Bool
 docFocused = do
@@ -107,7 +107,7 @@ data Aichan = Aichan {
   _depend :: Double,
   _lastFocus :: Integer,
   _hasFocus :: Bool,
-  _achieves :: IM.IntMap (Maybe String),
+  _achieves :: M.Map String (Maybe String),
   _items :: IM.IntMap Int,
 
   _maxLoves :: Double,
@@ -118,20 +118,20 @@ data Aichan = Aichan {
 instance Serialize Aichan where
   toJSON (Aichan ls lp d f _ as is ml dc lc) = Dict $ fmap (\(x,y) -> (toJSString x,y)) $
     [("loves",toJSON ls),("lps",toJSON lp),("depend",toJSON d),("lastFocus",toJSON $ show f),
-     ("achievements",toJSON $ IM.assocs as),("items",toJSON $ IM.assocs is),
+     ("achievements",toJSON $ M.assocs as),("items",toJSON $ IM.assocs is),
      ("maxLoves",toJSON ml),("dependCoeff",toJSON dc),("lpsCoeff",toJSON lc)]
   parseJSON z = do
     ls <- z .: toJSString "loves"
     lp <- z .: toJSString "lps"
     d <- z .: toJSString "depend"
     f <- read <$> z .: toJSString "lastFocus"
-    as <- IM.fromList <$> z .: toJSString "achievements"
+    as <- fmap M.fromList <$> z .:? toJSString "achievements"
     is <- IM.fromList <$> z .: toJSString "items"
     ml <- z .: toJSString "maxLoves"
     dc <- z .:? toJSString "dependCoeff"
     lc <- z .:? toJSString "lpsCoeff"
     return $ (unsafePerformIO def) 
-      & loves .~ ls & lps .~ lp & depend .~ d & lastFocus .~ f & achieves .~ as
+      & loves .~ ls & lps .~ lp & depend .~ d & lastFocus .~ f & achieves ?~ as
       & items .~ is & maxLoves .~ ml & dependCoeff ?~ dc & lpsCoeff ?~ lc
 
 -- makeLenses
@@ -140,17 +140,17 @@ lps :: Lens' Aichan Double; lps = lens _lps (\p x -> p { _lps = x })
 depend :: Lens' Aichan Double; depend = lens _depend (\p x -> p { _depend = x })
 lastFocus :: Lens' Aichan Integer; lastFocus = lens _lastFocus (\p x -> p { _lastFocus = x })
 hasFocus :: Lens' Aichan Bool; hasFocus = lens _hasFocus (\p x -> p { _hasFocus = x })
-achieves :: Lens' Aichan (IM.IntMap (Maybe String)); achieves = lens _achieves (\p x -> p { _achieves = x })
+achieves :: Lens' Aichan (M.Map String (Maybe String)); achieves = lens _achieves (\p x -> p { _achieves = x })
 items :: Lens' Aichan (IM.IntMap Int); items = lens _items (\p x -> p { _items = x })
 maxLoves :: Lens' Aichan Double; maxLoves = lens _maxLoves (\p x -> p { _maxLoves = x })
 dependCoeff :: Lens' Aichan Double; dependCoeff = lens _dependCoeff (\p x -> p { _dependCoeff = x })
 lpsCoeff :: Lens' Aichan Double; lpsCoeff = lens _lpsCoeff (\p x -> p { _lpsCoeff = x })
 
-achievements :: IM.IntMap (String, Int -> StateT Aichan IO ())
-achievements = IM.fromList $ achievementList
+achievements :: M.Map String (StateT Aichan IO ())
+achievements = M.fromList $ achievementList
 
-achievementList :: [(Int,(String, Int -> StateT Aichan IO ()))]
-achievementList = zip [1..] [
+achievementList :: [(String, StateT Aichan IO ())]
+achievementList = [
   pair "アイとの遭遇" $ loveOver 100,
   pair "愛され気分" $ loveOver 10000,
   pair "愛ラブユー" $ loveOver 1000000,
@@ -176,31 +176,31 @@ achievementList = zip [1..] [
   ]
   where
     pair s m = (s,m s)
-    achieve d s i = do
-      achieves %= IM.insert i (Just d)
+    achieve d s = do
+      achieves %= M.insert s (Just d)
       lift $ putAlert "game" $ "実績獲得: " ++ s
       save
 
-    itemOver k n s i = do
+    itemOver k n s = do
       im <- use items
       let name = (\(_,_,(_,_,c)) -> c) $ shopItems IM.! k
-      when (IM.member k im && im IM.! k >= n) $ achieve ("アイテム「" ++ name ++ "」を" ++ show n ++ "個以上手に入れる") s i
-    itemAllOver n s i = do
+      when (IM.member k im && im IM.! k >= n) $ achieve ("アイテム「" ++ name ++ "」を" ++ show n ++ "個以上手に入れる") s
+    itemAllOver n s = do
       im <- use items
       let b = all (\x -> IM.member x im && im IM.! x >= n) $ IM.keys $ IM.filterWithKey (\k _ -> k > 0) $ shopItems
-      when b $ achieve ("全ての通常アイテムを" ++ show n ++ "個以上手に入れる") s i
-    loveOver n s i = do
+      when b $ achieve ("全ての通常アイテムを" ++ show n ++ "個以上手に入れる") s
+    loveOver n s = do
       m <- use achieves
       lv <- use loves
-      when (lv>fromInteger n) $ achieve ("愛情が"++show n++"を超える") s i
-    lpsOver n s i = do
+      when (lv>fromInteger n) $ achieve ("愛情が"++show n++"を超える") s
+    lpsOver n s = do
       m <- use achieves
       ls <- use lps
-      when (ls>fromInteger n) $ achieve ("好感度が"++show n++"を超える") s i
-    dependOver n s i = do
+      when (ls>fromInteger n) $ achieve ("好感度が"++show n++"を超える") s
+    dependOver n s = do
       m <- use achieves
       d <- use depend
-      when (d>fromInteger n) $ achieve ("依存度が"++show n++"を超える") s i
+      when (d>fromInteger n) $ achieve ("依存度が"++show n++"を超える") s
 
 type Item = (Int -> Integer,Int -> StateT Aichan IO (),(String,String,String))
 
@@ -339,7 +339,7 @@ displayTable = do
     (m as)
   where
     m as = fmap (f as) achievementList
-    f as (i,(s,_)) = case IM.lookup i as of
+    f as (s,_) = case M.lookup s as of
       Just (Just x) -> (s,x)
       Just Nothing -> (s,"")
       Nothing -> (s,"")
@@ -378,9 +378,9 @@ update = do
 
   where
     achievesCheck = do
-      forM_ achievementList $ \(i,(s,m)) -> do
+      forM_ achievementList $ \(s,m) -> do
         as <- use achieves
-        when (IM.notMember i as || as IM.! i == Nothing) $ m i
+        when (M.notMember s as || as M.! s == Nothing) $ m
 
     maxCheck = do
       ml <- use maxLoves
