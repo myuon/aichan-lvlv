@@ -413,7 +413,7 @@ main = do
   btnEvents ref [-1,-2..]
 
   let notRecover = ["reset","resetAll"]
-  let rec = IM.filterWithKey (\k _ -> k `notElem` fmap (spItemNames M.!) notRecover) shopItems
+  let rec = IM.filterWithKey (\k _ -> k < 0 && k `notElem` fmap (spItemNames M.!) notRecover) shopItems
   forM_ (IM.assocs rec) $ \(i,t) -> do
     let (_,m,_) = t
     refStateT ref $ do
