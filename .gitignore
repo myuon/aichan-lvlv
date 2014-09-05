@@ -4,4 +4,7 @@ cabal.sandbox.config
 *.o
 main/
 .sass-cache/
-
+www/
+aichan-lvlv.cabal
+*.hs
+README.md

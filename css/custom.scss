@@ -67,7 +67,6 @@ header {
 
 #tabs {
   margin-bottom: 20px;
-  font-family: serif;
 
   .nav {
     border-bottom: 1px solid #eee;
@@ -89,7 +88,6 @@ header {
       a { color: $c-key - #222; }
       a:hover,
       a:focus { background-color: #fff; }
-      & .badge { background-color: $c-key; }
     }
   }
 }
@@ -296,50 +294,14 @@ header {
   }
 }
 
-#log {
-  #log-group {
-    max-height: 800px;
-    overflow: auto;
-  }
-}
-
 #alerts {
-  position: relative;
-  left: 0;
-  top: -150px;
+  position: fixed;
+  top: 50px;
+  right: 15px;
 
-  div.tip {
-    color: #fff;
-    background: #000;
-    border-color: #000;
-    border-radius: 6px;
-    padding: 10px 15px;
-
-    position: absolute;
-    opacity: 0.8;
-    z-index: 999;
-    width: 100%;
+  .alert {
+    background-color: $c-tinge;
+    border-color: $c-tinge - #333;
+    color: $c-ys3;
   }
-
-  div.tip:after {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 15px;
-    margin-left: -8px;
-    width: 0; height: 0;
-    border-bottom: 8px solid #000000;
-    border-right: 8px solid transparent;
-    border-left: 8px solid transparent;
-  }
-
-  button { color: #fff; }
-}
-
-.flow-box {
-  margin-bottom: 20px;
-  height: 10em;
-  overflow: auto;
-  border: 1px solid $c-peachy;
-  padding: 5px 10px;
 }
