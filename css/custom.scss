@@ -7,6 +7,7 @@ $c-tinge: #fea;
 $c-sweet: #ffd;
 $c-cpeach: #fdc;
 $c-peachy: #fb6;
+$c-blood: #a11;
 
 @mixin prefix($property, $value) {
   @each $prefix in -webkit-, -moz-, -ms-, -o-, '' {
@@ -29,6 +30,12 @@ body {
     'Merriweather','Lucida Grande',
     'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
   background-image: url("../img/02.png");
+}
+
+.night {
+  background-image: url("../img/02_inverse.png");
+  background-repeat: repeat-x;
+  background-color: rgba(0,0,0,.8);
 }
 
 .container-fluid {
@@ -67,6 +74,7 @@ header {
 
 #tabs {
   margin-bottom: 20px;
+  font-family: serif;
 
   .nav {
     border-bottom: 1px solid #eee;
@@ -88,7 +96,14 @@ header {
       a { color: $c-key - #222; }
       a:hover,
       a:focus { background-color: #fff; }
+      & .badge { background-color: $c-key; }
     }
+  }
+}
+
+.night {
+  & #display .list-group {
+    .value { color: $c-blood; }
   }
 }
 
@@ -129,7 +144,7 @@ header {
 
   .eye:not(:hover) {
     @include prefix(opacity, 0);
-    @include prefix(animation, mepachi 4s linear infinite);
+    @include prefix(animation, mepachi 7s linear infinite);
   }
   &:hover {
     @include prefix(animation, yure 1.0s linear 1);
@@ -140,12 +155,12 @@ header {
 
 @include keyframes(mepachi) {
   0% { opacity: 1; }
-  2% { opacity: 1; }
+  1% { opacity: 1; }
+  2% { opacity: 0; }
   3% { opacity: 0; }
+  4% { opacity: 1; }
+  5% { opacity: 1; }
   6% { opacity: 0; }
-  7% { opacity: 1; }
-  9% { opacity: 1; }
-  10% { opacity: 0; }
   100% { opacity: 0; }
 }
 
@@ -198,6 +213,15 @@ header {
     border-top: 8px solid #000000;
     border-right: 8px solid transparent;
     border-left: 8px solid transparent;
+  }
+}
+
+.night #main {
+  .item-box,
+  .item-sp-box {
+    & .count span {
+      color: $c-blood;
+    }
   }
 }
 
@@ -294,14 +318,50 @@ header {
   }
 }
 
-#alerts {
-  position: fixed;
-  top: 50px;
-  right: 15px;
-
-  .alert {
-    background-color: $c-tinge;
-    border-color: $c-tinge - #333;
-    color: $c-ys3;
+#log {
+  #log-group {
+    max-height: 800px;
+    overflow: auto;
   }
+}
+
+#alerts {
+  position: relative;
+  left: 0;
+  top: -150px;
+
+  div.tip {
+    color: #fff;
+    background: #000;
+    border-color: #000;
+    border-radius: 6px;
+    padding: 10px 15px;
+
+    position: absolute;
+    opacity: 0.8;
+    z-index: 999;
+    width: 100%;
+  }
+
+  div.tip:after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 15px;
+    margin-left: -8px;
+    width: 0; height: 0;
+    border-bottom: 8px solid #000000;
+    border-right: 8px solid transparent;
+    border-left: 8px solid transparent;
+  }
+
+  button { color: #fff; }
+}
+
+.flow-box {
+  margin-bottom: 20px;
+  height: 10em;
+  overflow: auto;
+  border: 1px solid $c-peachy;
+  padding: 5px 10px;
 }

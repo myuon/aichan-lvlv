@@ -6,6 +6,11 @@ body {
   font-family: 'Merriweather','Lucida Grande', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
   background-image: url("../img/02.png"); }
 
+.night {
+  background-image: url("../img/02_inverse.png");
+  background-repeat: repeat-x;
+  background-color: rgba(0, 0, 0, 0.8); }
+
 .container-fluid {
   background-color: rgba(255, 255, 255, 0.9); }
 
@@ -59,6 +64,9 @@ header {
       #tabs .nav li.active .badge {
         background-color: #88ccaa; }
 
+.night #display .list-group .value {
+  color: #aa1111; }
+
 #display #monitor {
   display: none; }
 #display .list-group .name {
@@ -93,11 +101,11 @@ header {
     -ms-opacity: 0;
     -o-opacity: 0;
     opacity: 0;
-    -webkit-animation: mepachi 4s linear infinite;
-    -moz-animation: mepachi 4s linear infinite;
-    -ms-animation: mepachi 4s linear infinite;
-    -o-animation: mepachi 4s linear infinite;
-    animation: mepachi 4s linear infinite; }
+    -webkit-animation: mepachi 7s linear infinite;
+    -moz-animation: mepachi 7s linear infinite;
+    -ms-animation: mepachi 7s linear infinite;
+    -o-animation: mepachi 7s linear infinite;
+    animation: mepachi 7s linear infinite; }
   #aichan-img:hover {
     -webkit-animation: yure 1s linear 1;
     -moz-animation: yure 1s linear 1;
@@ -116,22 +124,22 @@ header {
   0% {
     opacity: 1; }
 
-  2% {
+  1% {
     opacity: 1; }
+
+  2% {
+    opacity: 0; }
 
   3% {
     opacity: 0; }
 
+  4% {
+    opacity: 1; }
+
+  5% {
+    opacity: 1; }
+
   6% {
-    opacity: 0; }
-
-  7% {
-    opacity: 1; }
-
-  9% {
-    opacity: 1; }
-
-  10% {
     opacity: 0; }
 
   100% {
@@ -141,22 +149,22 @@ header {
   0% {
     opacity: 1; }
 
-  2% {
+  1% {
     opacity: 1; }
+
+  2% {
+    opacity: 0; }
 
   3% {
     opacity: 0; }
 
+  4% {
+    opacity: 1; }
+
+  5% {
+    opacity: 1; }
+
   6% {
-    opacity: 0; }
-
-  7% {
-    opacity: 1; }
-
-  9% {
-    opacity: 1; }
-
-  10% {
     opacity: 0; }
 
   100% {
@@ -166,22 +174,22 @@ header {
   0% {
     opacity: 1; }
 
-  2% {
+  1% {
     opacity: 1; }
+
+  2% {
+    opacity: 0; }
 
   3% {
     opacity: 0; }
 
+  4% {
+    opacity: 1; }
+
+  5% {
+    opacity: 1; }
+
   6% {
-    opacity: 0; }
-
-  7% {
-    opacity: 1; }
-
-  9% {
-    opacity: 1; }
-
-  10% {
     opacity: 0; }
 
   100% {
@@ -191,22 +199,22 @@ header {
   0% {
     opacity: 1; }
 
-  2% {
+  1% {
     opacity: 1; }
+
+  2% {
+    opacity: 0; }
 
   3% {
     opacity: 0; }
 
+  4% {
+    opacity: 1; }
+
+  5% {
+    opacity: 1; }
+
   6% {
-    opacity: 0; }
-
-  7% {
-    opacity: 1; }
-
-  9% {
-    opacity: 1; }
-
-  10% {
     opacity: 0; }
 
   100% {
@@ -389,6 +397,10 @@ header {
     border-top: 8px solid #000000;
     border-right: 8px solid transparent;
     border-left: 8px solid transparent; }
+
+.night #main .item-box .count span,
+.night #main .item-sp-box .count span {
+  color: #aa1111; }
 
 #main #list-group > li, #main #list-sp-group > li:not(:first-child) {
   display: none; }
