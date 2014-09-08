@@ -10,8 +10,8 @@ import Control.Monad.State
 import Control.Applicative
 import Data.List
 import Data.IORef
-import qualified Data.IntMap as IM
 import qualified Data.Map as M
+import qualified Data.IntMap as IM
 import Text.Printf
 import Numeric
 import System.IO.Unsafe (unsafePerformIO)
@@ -99,7 +99,7 @@ def = do
   ur <- getProp elm "innerHTML"
   let num = if ur == "" then 0 else read ur
 
-  return $ Aichan 0 0 0 0 False M.empty IM.empty 0 1 1 0
+  return $ Aichan 0 0 0 0 False M.empty M.empty 0 1 1 0
     & lastFocus .~ t & logUnread .~ num
 
 docFocused :: IO Bool
@@ -117,7 +117,7 @@ data Aichan = Aichan {
   _lastFocus :: Integer,
   _hasFocus :: Bool,
   _achieves :: M.Map String (Maybe String),
-  _items :: IM.IntMap Int,
+  _items :: M.Map String Int,
 
   _maxLoves :: Double,
   _dependCoeff :: Double,
@@ -129,7 +129,7 @@ data Aichan = Aichan {
 instance Serialize Aichan where
   toJSON (Aichan ls lp d f _ as is ml dc lc _) = Dict $ fmap (\(x,y) -> (toJSString x,y)) $
     [("loves",toJSON ls),("lps",toJSON lp),("depend",toJSON d),("lastFocus",toJSON $ show f),
-     ("achievements",toJSON $ M.assocs as),("items",toJSON $ IM.assocs is),
+     ("achievements",toJSON $ M.assocs as),("itemsWithMap",toJSON $ M.assocs is),
      ("maxLoves",toJSON ml),("dependCoeff",toJSON dc),("lpsCoeff",toJSON lc)]
   parseJSON z = do
     ls <- z .: toJSString "loves"
@@ -137,13 +137,20 @@ instance Serialize Aichan where
     d <- z .: toJSString "depend"
     f <- read <$> z .: toJSString "lastFocus"
     as <- fmap M.fromList <$> z .:? toJSString "achievements"
-    is <- IM.fromList <$> z .: toJSString "items"
+    is <- fmap M.fromList <$> z .:? toJSString "itemsWithMap"
     ml <- z .: toJSString "maxLoves"
     dc <- z .:? toJSString "dependCoeff"
     lc <- z .:? toJSString "lpsCoeff"
+
+    is' <- z .:? toJSString "items"
+    m <- return $ IM.fromList
+      [(1,"chat"),(2,"mail"),(3,"coffee"),(4,"gift"),(5,"trip"),(6,"car"),(7,"house"),(8,"righteye"),(9,"lefteye")
+      ,(-1,"monitor"),(-2,"itemshop"),(-3,"righteye"),(-4,"lefteye"),(-5,"righteye"),(-6,"lefteye"),(-7,"reset"),(-8,"restart")]
+    let oldMap = M.fromList . fmap (\(k,s) -> (m IM.! k,s)) <$> is'
+
     return $ (unsafePerformIO def) 
       & loves .~ ls & lps .~ lp & depend .~ d & lastFocus .~ f & achieves ?~ as
-      & items .~ is & maxLoves .~ ml & dependCoeff ?~ dc & lpsCoeff ?~ lc
+      & items ?~ (if oldMap /= Nothing then oldMap else is) & maxLoves .~ ml & dependCoeff ?~ dc & lpsCoeff ?~ lc
 
 -- makeLenses
 loves :: Lens' Aichan Double; loves = lens _loves (\p x -> p { _loves = x })
@@ -152,7 +159,7 @@ depend :: Lens' Aichan Double; depend = lens _depend (\p x -> p { _depend = x })
 lastFocus :: Lens' Aichan Integer; lastFocus = lens _lastFocus (\p x -> p { _lastFocus = x })
 hasFocus :: Lens' Aichan Bool; hasFocus = lens _hasFocus (\p x -> p { _hasFocus = x })
 achieves :: Lens' Aichan (M.Map String (Maybe String)); achieves = lens _achieves (\p x -> p { _achieves = x })
-items :: Lens' Aichan (IM.IntMap Int); items = lens _items (\p x -> p { _items = x })
+items :: Lens' Aichan (M.Map String Int); items = lens _items (\p x -> p { _items = x })
 maxLoves :: Lens' Aichan Double; maxLoves = lens _maxLoves (\p x -> p { _maxLoves = x })
 dependCoeff :: Lens' Aichan Double; dependCoeff = lens _dependCoeff (\p x -> p { _dependCoeff = x })
 lpsCoeff :: Lens' Aichan Double; lpsCoeff = lens _lpsCoeff (\p x -> p { _lpsCoeff = x })
@@ -178,10 +185,10 @@ achievementList = [
   pair "依存注意報" $ dependOver 100,
   pair "依存ドラッグ" $ dependOver 10000,
 
-  pair "おしゃべり愛ちゃん" $ itemOver 1 100,
-  pair "あ、うん" $ itemOver 1 200,
-  pair "喫茶店のポイントカード" $ itemOver 3 50,
-  pair "愛という名のプレゼント" $ itemOver 4 50,
+  pair "おしゃべり愛ちゃん" $ itemOver "chat" 100,
+  pair "あ、うん" $ itemOver "chat" 200,
+  pair "喫茶店のポイントカード" $ itemOver "coffee" 50,
+  pair "愛という名のプレゼント" $ itemOver "gift" 50,
 
   pair "コンプリート" $ itemAllOver 1,
   pair "ココココココココココンプリート" $ itemAllOver 10,
@@ -197,11 +204,11 @@ achievementList = [
 
     itemOver k n s = do
       im <- use items
-      let name = (\(_,_,(_,_,c)) -> c) $ shopItems IM.! k
-      when (IM.member k im && im IM.! k >= n) $ achieve ("アイテム「" ++ name ++ "」を" ++ show n ++ "個以上手に入れる") s
+      let name = (\(_,_,(_,_,c)) -> c) $ shopItems M.! k
+      when (M.member k im && im M.! k >= n) $ achieve ("アイテム「" ++ name ++ "」を" ++ show n ++ "個以上手に入れる") s
     itemAllOver n s = do
       im <- use items
-      let b = all (\x -> IM.member x im && im IM.! x >= n) $ IM.keys $ IM.filterWithKey (\k _ -> k > 0) $ shopItems
+      let b = all (\x -> M.member x im && im M.! x >= n) $ normalItemNames
       when b $ achieve ("全ての通常アイテムを" ++ show n ++ "個以上手に入れる") s
     loveOver n s = do
       m <- use achieves
@@ -222,34 +229,35 @@ achievementList = [
 
 type Item = (Int -> Integer,Int -> StateT Aichan IO (),(String,String,String))
 
-spItemNames :: M.Map String Int
-spItemNames = M.fromList $ zip names [-1,-2..] where
-  names = ["monitor","item-shop","reset","resetAll"]
+normalItemNames :: [String]
+normalItemNames = takeWhile (/= "monitor") $ fmap fst $ shopItemList
 
-shopItemList :: [(Int,Item)]
+shopItemList :: [(String,Item)]
 shopItemList = normal ++ special where
-  normal = zip [1..] $ [
-    (cost 1,booster 0.2,("fa-comments-o","会話<br>好感度 +0.2","会話")),
-    (cost 50,booster 1,("fa-envelope","メール<br>好感度 +1.0","メール")),
-    (cost 1000,booster 10,("fa-coffee","喫茶店<br>好感度 +10","喫茶店")),
-    (cost 20000,booster 100,("fa-gift","プレゼント<br>好感度 +100","プレゼント")),
-    (cost 500000,booster 1000,("fa-plane","旅行<br>好感度 +1000","旅行")),
-    (cost 10000000,booster 15000,("fa-car","車<br>好感度 +15000","車")),
-    (cost 250000000,booster 200000,("fa-home","家<br>好感度 +200000","家")),
-    (costMul 100 100000,dependMulti 10,("fa-eye","アイちゃんの右目<br>依存度ボーナスが増えます。","アイちゃんの右目")),
-    (costMul 100 100000,lpsMulti 10,("fa-eye","アイちゃんの左目<br>依存度が好感度に変わる速さが速くなります。","アイちゃんの左目"))]
+  normal = [
+    (,) "chat" (cost 1,booster 0.2,("fa-comments-o","会話<br>好感度 +0.2","会話")),
+    (,) "mail" (cost 50,booster 1,("fa-envelope","メール<br>好感度 +1.0","メール")),
+    (,) "coffee" (cost 1000,booster 10,("fa-coffee","喫茶店<br>好感度 +10","喫茶店")),
+    (,) "gift" (cost 20000,booster 100,("fa-gift","プレゼント<br>好感度 +100","プレゼント")),
+    (,) "trip" (cost 500000,booster 1000,("fa-plane","旅行<br>好感度 +1000","旅行")),
+    (,) "car" (cost 10000000,booster 15000,("fa-car","車<br>好感度 +15000","車")),
+    (,) "house" (cost 250000000,booster 200000,("fa-home","家<br>好感度 +200000","家")),
+    (,) "righteye" (costMul 100 100000,dependMulti 10,("fa-eye","アイちゃんの右目<br>依存度ボーナスが増えます。","アイちゃんの右目")),
+    (,) "lefteye" (costMul 100 100000,lpsMulti 10,("fa-eye","アイちゃんの左目<br>依存度が好感度に変わる速さが速くなります。","アイちゃんの左目"))]
     where
       cost b n = floor $ b * 1.25^n
-      costMul r a n = floor $ a * r^(fromIntegral n)
+      costMul r a n = floor $ a * r^n
       booster n _ = lps += n
-      dependMulti d n = dependCoeff .= d^(fromIntegral n)
-      lpsMulti d n = lpsCoeff .= d^(fromIntegral n)
+      dependMulti d n = dependCoeff .= d^n
+      lpsMulti d n = lpsCoeff .= d^n
 
-  special = zip [-1,-2..] $ [
-    (const 0,disp "monitor",("fa-power-off","さぁ始めよう<br>ゲームを始めましょう。右のボタンからこのアイテムを購入してください。","さぁ始めよう")),
-    (const 1,disp "item-shop",("fa-shopping-cart","アイテムショップ<br>アイテムが購入できるようになります。","アイテムショップ")),
-    (const 10,reset,("fa-history","初期化<br>実績を除く全てのデータが初期化されます","初期化")),
-    (const 100,resetAll,("fa-trash","データの消去<br>全てのデータが消去されます。この操作は取り消せません。","データの消去"))]
+  special = [
+    (,) "monitor" (const 0,disp "monitor",("fa-power-off","さぁ始めよう<br>ゲームを始めましょう。右のボタンからこのアイテムを購入してください。","さぁ始めよう")),
+    (,) "itemshop" (const 1,disp "item-shop",("fa-shopping-cart","アイテムショップ<br>アイテムが購入できるようになります。","アイテムショップ")),
+    (,) "save" (const 0,doSave,("fa-save","セーブ<br>セーブします。","セーブ")),
+    (,) "reset" (const 10,reset,("fa-history","初期化<br>実績を除く全てのデータが初期化されます","初期化")),
+    (,) "restart" (const 100,resetAll,("fa-trash","データの消去<br>全てのデータが消去されます。この操作は取り消せません。","データの消去")),
+    (,) "night" (const 5,night,("fa-moon-o","夜<br>夜が訪れます。<br><strong>※注意 このアイテムの効果は保存されません。ブラウザがリロードされると元に戻ります。</strong>","夜"))]
     where
       disp k _ = do
         withElem k $ \e -> setStyle e "display" "block"
@@ -266,13 +274,21 @@ shopItemList = normal ++ special where
         save
         withElem "monitor" $ \e -> setStyle e "display" "none"
         withElem "item-shop" $ \e -> setStyle e "display" "none"
+      doSave _ = do
+        items %= M.insert "save" 0
+        save
+        putAlert "auto" "セーブしました"
+      night _ = do
+        items %= M.insert "night" 0
+        save
+        setClass documentBody "night" True
 
-shopItems :: IM.IntMap Item
-shopItems = IM.fromList shopItemList
+shopItems :: M.Map String Item
+shopItems = M.fromList shopItemList
 
-itemLi :: Int -> String -> String -> String -> P.Perch
+itemLi :: String -> String -> String -> String -> P.Perch
 itemLi i icon tips box = do
-  let p = "item-" ++ (if i>0 then show i else "sp-" ++ show (abs i))
+  let p = "item-" ++ i
   P.li P.! P.id p P.! P.atr "class" "list-group-item tooltips" $ do
     P.span P.! P.atr "class" "tip" $ do
       P.setHtml P.this tips
@@ -317,10 +333,10 @@ displayShop = do
   lvs <- use loves
   im <- use items
   forM_ shopItemList $ \(i,(c,m,_)) -> do
-    let eid = if i>0 then "item-" ++ show i else "item-sp-" ++ show (abs i)
-    let num = maybe 0 id (IM.lookup i im)
+    let eid = "item-" ++ i
+    let num = maybe 0 id (M.lookup i im)
 
-    when (i>0) $ do
+    when (i `elem` normalItemNames) $ do
       withElem (eid ++ "-box") $ \ebox -> do
         Just e <- elemById (eid ++ "-icon")
         i <- getProp e "innerHTML"
@@ -332,7 +348,7 @@ displayShop = do
       withElem (eid ++ "-num") $ \enum -> do
         setProp enum "innerHTML" $ show num
 
-    let cond = if i>0 then True else IM.notMember i im || im IM.! i < 1
+    let cond = if i `elem` normalItemNames then True else M.notMember i im || im M.! i < 1
     withElem (eid ++ "-btn") $ \ebtn -> do
       case cond && fromIntegral (c num) <= lvs of
         True -> removeAttr ebtn "disabled"
@@ -342,7 +358,7 @@ displayShop = do
       setProp ecost "innerHTML" $ sepComma $ show $ c num
 
     ml <- use maxLoves
-    when (IM.member i im || (fromIntegral $ c 0) <= 3*ml) $ do
+    when (M.member i im || (fromIntegral $ c 0) <= 3*ml) $ do
       withElem eid $ \k -> do
         a <- getStyle k "display"
         when (a /= "block") $ setStyle k "display" "block"
@@ -392,17 +408,27 @@ update = do
   hasFocus .= f'
   achievesCheck
   maxCheck
+  itemAffordableCheck
 
   where
     achievesCheck = do
       forM_ achievementList $ \(s,m) -> do
         as <- use achieves
         when (M.notMember s as || as M.! s == Nothing) $ m
-
     maxCheck = do
       ml <- use maxLoves
       lv <- use loves
       when (lv > ml) $ maxLoves .= lv
+    itemAffordableCheck = do
+      im <- use items
+      forM_ shopItemList $ \(i,(c,_,_)) -> do
+        let eid = "item-" ++ i
+        let num = maybe 0 id (M.lookup i im)
+        let cond = if i `notElem` normalItemNames then num == 0 else True
+        lvs <- use loves
+        when (cond && fromIntegral (c num) <= lvs) $
+          withElem (eid ++ "-btn") $ \ebtn -> do
+            removeAttr ebtn "disabled"
 
 loadItem :: (Serialize a) => String -> a -> IO (IORef a)
 loadItem s a = do
@@ -414,11 +440,12 @@ loadItem s a = do
 save :: StateT Aichan IO ()
 save = do
   lift . setItem saveName =<< get
+  displayShop
   displayTable
 
 main = do
   ref <- loadItem saveName =<< def
-  let (a,b) = partition ((>0) . fst) shopItemList
+  let (a,b) = partition (\(x,_) -> x `elem` normalItemNames) shopItemList
   withElem "list-group" $ \e -> do
     forM_ a $ \(i,(_,_,(icon,tip,box))) -> do
       P.build (itemLi i icon tip box) e
@@ -426,22 +453,22 @@ main = do
     forM_ b $ \(i,(_,_,(icon,tip,box))) -> do
       P.build (itemLi i icon tip box) e
 
-  btnEvents ref [1..]
-  btnEvents ref [-1,-2..]
+  btnEvents ref $ fmap fst shopItemList
 
-  let notRecover = ["reset","resetAll"]
-  let rec = IM.filterWithKey (\k _ -> k < 0 && k `notElem` fmap (spItemNames M.!) notRecover) shopItems
-  forM_ (IM.assocs rec) $ \(i,t) -> do
+  let recover = ["monitor","itemshop"]
+  forM_ (M.assocs $ M.filterWithKey (\k _ -> k `elem` recover) shopItems) $ \(i,t) -> do
     let (_,m,_) = t
     refStateT ref $ do
       im <- use items
-      when (IM.member i im && im IM.! i > 0) $ m i
+      when (M.member i im && im M.! i > 0) $ m $ im M.! i
+
+  refStateT ref $ do
+    displayShop
 
   q <- loopStateT (floor $ 1000/fps) ref $ do
     im <- use items
-    when (IM.member (spItemNames M.! "monitor") im) update
+    when (M.member "monitor" im) update
     display
-    displayShop
   print q
   
   q1 <- loopStateT (floor $ 1000/titleFps) ref $ do
@@ -453,18 +480,17 @@ main = do
     putAlert "auto" "セーブしました"
   print q2
   
-btnEvents :: IORef Aichan -> [Int] -> IO ()
+btnEvents :: IORef Aichan -> [String] -> IO ()
+btnEvents _ [] = return ()
 btnEvents ref (i:is) = do
-  ei <- if i>0
-    then elemById $ "item-" ++ show i ++ "-btn"
-    else elemById $ "item-sp-" ++ show (abs i) ++ "-btn"
+  ei <- elemById $ "item-" ++ i ++ "-btn"
   case ei of
     Just ebtn -> do
       onEvent ebtn OnClick $ \_ _ -> do
         refStateT ref $ do
-          items %= IM.insertWith (+) i 1
-          let (c,m,(_,_,name)) = shopItems IM.! i
-          num <- (IM.! i) <$> use items
+          items %= M.insertWith (+) i 1
+          let (c,m,(_,_,name)) = shopItems M.! i
+          num <- (M.! i) <$> use items
           loves -= fromIntegral (c $ num-1)
           m num
           putLog "game" $ "「" ++ name ++ "」を購入しました"
