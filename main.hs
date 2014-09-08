@@ -47,10 +47,10 @@ addChildFirst e c = liftIO $ acf e c
     acf :: Elem -> Elem -> IO ()
     acf = ffi $ toJSString "(function(e,c){var first = e.firstChild; e.insertBefore(c,first);})"
 
-putAlert :: String -> String -> IO ()
+putAlert :: String -> String -> StateT Aichan IO ()
 putAlert person s = do
-  t <- getCurrentTime
-  withElem "alerts" $ P.build $ do
+  t <- liftIO getCurrentTime
+  liftIO $ withElem "alerts" $ P.build $ do
     P.setHtml P.this ""
     P.div P.! P.id ("alert-" ++ show t) P.! P.atr "class" ("alert alert-info fade in tip") P.! P.atr "role" "alert" $ do
       P.button P.! P.atr "type" "button" P.! P.atr "class" "close" P.! P.atr "data-dismiss" "alert" $ do
@@ -59,23 +59,20 @@ putAlert person s = do
       P.span $ do
         P.setHtml P.this s
 
-  setTimeout 5000 $ do
+  liftIO $ setTimeout 5000 $ do
     eval $ toJSString $ "$('#alert-" ++ show t ++ "').alert('close')"
     return ()
   putLog person s
 
-putLog :: String -> String -> IO ()
-putLog person s = do
+putLogIO :: String -> String -> Int -> IO ()
+putLogIO person s num = do
   withElem "log-group" $ \e -> do
     stamp <- liftIO getCurrentPrettyTime
     li <- newElem "li"
     addChildFirst e =<< P.build (listGroupItem stamp) li
 
   withElem "unread-badge" $ \e -> do
-    k <- getProp e "innerHTML"
-    if k == ""
-      then setProp e "innerHTML" "1"
-      else setProp e "innerHTML" $ show $ 1 + read k
+    setProp e "innerHTML" $ show num
 
   return ()
   where
@@ -90,8 +87,20 @@ putLog person s = do
       | isPrefixOf x str = y ++ replace x y (drop (length x) str)
       | otherwise = s:replace x y ss
 
+putLog :: String -> String -> StateT Aichan IO ()
+putLog person s = do
+  logUnread += 1
+  lift . putLogIO person s =<< use logUnread
+
 def :: IO Aichan
-def = (\t -> Aichan 0 0 0 0 False M.empty IM.empty 0 1 1 & lastFocus .~ t) <$> getCurrentTime
+def = do
+  t <- getCurrentTime
+  Just elm <- elemById "unread-badge"
+  ur <- getProp elm "innerHTML"
+  let num = if ur == "" then 0 else read ur
+
+  return $ Aichan 0 0 0 0 False M.empty IM.empty 0 1 1 0
+    & lastFocus .~ t & logUnread .~ num
 
 docFocused :: IO Bool
 docFocused = do
@@ -112,11 +121,13 @@ data Aichan = Aichan {
 
   _maxLoves :: Double,
   _dependCoeff :: Double,
-  _lpsCoeff :: Double
+  _lpsCoeff :: Double,
+
+  _logUnread :: Int
   } deriving (Eq, Show)
 
 instance Serialize Aichan where
-  toJSON (Aichan ls lp d f _ as is ml dc lc) = Dict $ fmap (\(x,y) -> (toJSString x,y)) $
+  toJSON (Aichan ls lp d f _ as is ml dc lc _) = Dict $ fmap (\(x,y) -> (toJSString x,y)) $
     [("loves",toJSON ls),("lps",toJSON lp),("depend",toJSON d),("lastFocus",toJSON $ show f),
      ("achievements",toJSON $ M.assocs as),("items",toJSON $ IM.assocs is),
      ("maxLoves",toJSON ml),("dependCoeff",toJSON dc),("lpsCoeff",toJSON lc)]
@@ -145,6 +156,7 @@ items :: Lens' Aichan (IM.IntMap Int); items = lens _items (\p x -> p { _items =
 maxLoves :: Lens' Aichan Double; maxLoves = lens _maxLoves (\p x -> p { _maxLoves = x })
 dependCoeff :: Lens' Aichan Double; dependCoeff = lens _dependCoeff (\p x -> p { _dependCoeff = x })
 lpsCoeff :: Lens' Aichan Double; lpsCoeff = lens _lpsCoeff (\p x -> p { _lpsCoeff = x })
+logUnread :: Lens' Aichan Int; logUnread = lens _logUnread (\p x -> p { _logUnread = x })
 
 achievements :: M.Map String (StateT Aichan IO ())
 achievements = M.fromList $ achievementList
@@ -172,13 +184,15 @@ achievementList = [
   pair "愛という名のプレゼント" $ itemOver 4 50,
 
   pair "コンプリート" $ itemAllOver 1,
-  pair "ココココココココココンプリート" $ itemAllOver 10
+  pair "ココココココココココンプリート" $ itemAllOver 10,
+
+  pair "長い長いログ" $ logOver 100
   ]
   where
     pair s m = (s,m s)
     achieve d s = do
       achieves %= M.insert s (Just d)
-      lift $ putAlert "game" $ "実績獲得: " ++ s
+      putAlert "game" $ "実績獲得: " ++ s
       save
 
     itemOver k n s = do
@@ -201,6 +215,10 @@ achievementList = [
       m <- use achieves
       d <- use depend
       when (d>fromInteger n) $ achieve ("依存度が"++show n++"を超える") s
+    logOver d s = do
+      ur <- use logUnread
+      when (ur >= d) $
+        achieve ("ログの行数が"++show d++"を超える") s
 
 type Item = (Int -> Integer,Int -> StateT Aichan IO (),(String,String,String))
 
@@ -215,24 +233,25 @@ shopItemList = normal ++ special where
     (cost 50,booster 1,("fa-envelope","メール<br>好感度 +1.0","メール")),
     (cost 1000,booster 10,("fa-coffee","喫茶店<br>好感度 +10","喫茶店")),
     (cost 20000,booster 100,("fa-gift","プレゼント<br>好感度 +100","プレゼント")),
-    (cost 500000,booster 600,("fa-plane","旅行<br>好感度 +600","旅行")),
-    (cost 10000000,booster 5000,("fa-car","車<br>好感度 +5000","車")),
-    (cost 250000000,booster 12000,("fa-home","家<br>好感度 +12000","家"))]
+    (cost 500000,booster 1000,("fa-plane","旅行<br>好感度 +1000","旅行")),
+    (cost 10000000,booster 15000,("fa-car","車<br>好感度 +15000","車")),
+    (cost 250000000,booster 200000,("fa-home","家<br>好感度 +200000","家")),
+    (costMul 100 100000,dependMulti 10,("fa-eye","アイちゃんの右目<br>依存度ボーナスが増えます。","アイちゃんの右目")),
+    (costMul 100 100000,lpsMulti 10,("fa-eye","アイちゃんの左目<br>依存度が好感度に変わる速さが速くなります。","アイちゃんの左目"))]
     where
-      cost b n = floor $ b * 1.35^n
+      cost b n = floor $ b * 1.25^n
+      costMul r a n = floor $ a * r^(fromIntegral n)
       booster n _ = lps += n
+      dependMulti d n = dependCoeff .= d^(fromIntegral n)
+      lpsMulti d n = lpsCoeff .= d^(fromIntegral n)
 
   special = zip [-1,-2..] $ [
     (const 0,disp "monitor",("fa-power-off","さぁ始めよう<br>ゲームを始めましょう。右のボタンからこのアイテムを購入してください。","さぁ始めよう")),
     (const 1,disp "item-shop",("fa-shopping-cart","アイテムショップ<br>アイテムが購入できるようになります。","アイテムショップ")),
-    (const 100000,dependMulti 10,("fa-eye","アイちゃんの右目<br>依存度ボーナスが10倍になります。","アイちゃんの右目")),
-    (const 100000,lpsMulti 10,("fa-eye","アイちゃんの左目<br>依存度が好感度に変わる速さが10倍になります。","アイちゃんの左目")),
-    (const 10000000,dependMulti 100,("fa-eye-slash","アイちゃんの右目<br>依存度ボーナスが100倍になります。","アイちゃんの右目+")),
-    (const 10000000,lpsMulti 100,("fa-eye-slash","アイちゃんの左目<br>依存度が好感度に変わる速さが100倍になります。","アイちゃんの左目+")),
     (const 10,reset,("fa-history","初期化<br>実績を除く全てのデータが初期化されます","初期化")),
     (const 100,resetAll,("fa-trash","データの消去<br>全てのデータが消去されます。この操作は取り消せません。","データの消去"))]
     where
-      disp k i = do
+      disp k _ = do
         withElem k $ \e -> setStyle e "display" "block"
         when (k == "monitor") $ lastFocus <~ liftIO getCurrentTime
       resetAll _ = do
@@ -247,8 +266,6 @@ shopItemList = normal ++ special where
         save
         withElem "monitor" $ \e -> setStyle e "display" "none"
         withElem "item-shop" $ \e -> setStyle e "display" "none"
-      dependMulti d _ = dependCoeff .= d
-      lpsMulti d _ = lpsCoeff .= d
 
 shopItems :: IM.IntMap Item
 shopItems = IM.fromList shopItemList
@@ -360,7 +377,7 @@ update = do
       when (f == False) $ do
         let bonus = (diff/1000/50) * dmul
         depend += bonus
-        lift $ putAlert "愛ちゃん" $ "おかえりなさい！<br>(依存度ボーナス +" ++ humanize bonus ++ ")"
+        putAlert "愛ちゃん" $ "おかえりなさい！<br>(依存度ボーナス +" ++ humanize bonus ++ ")"
 
       depend += (diff/1000/1000) * dmul
       lps += (diff/1000/100) * lmul
@@ -433,7 +450,7 @@ main = do
 
   q2 <- loopStateT (saveInterval * 1000) ref $ do
     save
-    liftIO $ putAlert "auto" "セーブしました"
+    putAlert "auto" "セーブしました"
   print q2
   
 btnEvents :: IORef Aichan -> [Int] -> IO ()
@@ -449,8 +466,8 @@ btnEvents ref (i:is) = do
           let (c,m,(_,_,name)) = shopItems IM.! i
           num <- (IM.! i) <$> use items
           loves -= fromIntegral (c $ num-1)
-          m i
-          lift $ putLog "game" $ "「" ++ name ++ "」を購入しました"
+          m num
+          putLog "game" $ "「" ++ name ++ "」を購入しました"
           save
         writeLog . show =<< readIORef ref
       btnEvents ref is
