@@ -178,8 +178,8 @@ header {
     th { color: $c-ys3; }
   }
 
-  .table-striped > tbody > tr:nth-child(2n+1) > td {
-    background-color: #f9f9f9;
+  tbody tr td:first-child {
+    width: 20em;
   }
 }
 
@@ -226,8 +226,8 @@ header {
 }
 
 #main {
-  #list-group > li, #list-sp-group > li:not(:first-child) { display: none; }
-  #item-shop { display: none; }
+  #list-group > li { display: none; }
+  #itemshop { display: none; }
 
   .item-sp-box .panel-heading {
     background-color: $c-cpeach;

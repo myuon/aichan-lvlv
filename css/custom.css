@@ -368,8 +368,8 @@ header {
   padding-left: 15px; }
 #stat table th {
   color: #776644; }
-#stat .table-striped > tbody > tr:nth-child(2n+1) > td {
-  background-color: #f9f9f9; }
+#stat tbody tr td:first-child {
+  width: 20em; }
 
 .tooltips {
   position: relative; }
@@ -402,9 +402,9 @@ header {
 .night #main .item-sp-box .count span {
   color: #aa1111; }
 
-#main #list-group > li, #main #list-sp-group > li:not(:first-child) {
+#main #list-group > li {
   display: none; }
-#main #item-shop {
+#main #itemshop {
   display: none; }
 #main .item-sp-box .panel-heading {
   background-color: #ffddcc; }
