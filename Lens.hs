@@ -24,6 +24,9 @@ l %~ f = runIdentity . l (Identity . f)
 s ?~ (Just l) = s .~ l
 s ?~ Nothing = id
 
+(+~) :: (Num a) => Lens' s a -> a -> s -> s
+l +~ x = l %~ (+x)
+
 infixl 5 &
 (&) :: a -> (a -> b) -> b
 (&) = flip ($)

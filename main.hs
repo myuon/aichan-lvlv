@@ -4,6 +4,7 @@ import Haste.Foreign
 import Haste.Serialize
 import Haste.JSON
 import Haste.LocalStorage
+import qualified Haste.Binary as B
 import qualified Haste.Perch as P
 import Control.Monad
 import Control.Monad.State
@@ -187,13 +188,19 @@ achievementList = [
 
   pair "おしゃべり愛ちゃん" $ itemOver "chat" 100,
   pair "あ、うん" $ itemOver "chat" 200,
-  pair "喫茶店のポイントカード" $ itemOver "coffee" 50,
+  pair "文通相手" $ itemOver "mail" 100,
+  pair "喫茶店のポイントカード" $ itemOver "coffee" 100,
   pair "愛という名のプレゼント" $ itemOver "gift" 50,
+  pair "マイルがたくさん" $ itemOver "trip" 50,
+  pair "車コレクター" $ itemOver "car" 50,
+  pair "別荘マニア" $ itemOver "house" 50,
 
   pair "コンプリート" $ itemAllOver 1,
   pair "ココココココココココンプリート" $ itemAllOver 10,
 
-  pair "長い長いログ" $ logOver 100
+  pair "長い長いログ" $ logOver 100,
+
+  pair "放置プレイ" $ loveOverWithNoItem 1000000
   ]
   where
     pair s m = (s,m s)
@@ -202,6 +209,11 @@ achievementList = [
       putAlert "game" $ "実績獲得: " ++ s
       save
 
+    loveOverWithNoItem n s = do
+      m <- use achieves
+      lv <- use loves
+      im <- use items
+      when (lv>fromInteger n && all (\t -> M.notMember t im || im M.! t == 0) normalItemNames) $ achieve ("通常アイテムを買っていない状態で愛情が"++show n++"を超える") s
     itemOver k n s = do
       im <- use items
       let name = (\(_,_,(_,_,c)) -> c) $ shopItems M.! k
@@ -242,38 +254,36 @@ shopItemList = normal ++ special where
     (,) "trip" (cost 500000,booster 1000,("fa-plane","旅行<br>好感度 +1000","旅行")),
     (,) "car" (cost 10000000,booster 15000,("fa-car","車<br>好感度 +15000","車")),
     (,) "house" (cost 250000000,booster 200000,("fa-home","家<br>好感度 +200000","家")),
-    (,) "righteye" (costMul 100 100000,dependMulti 10,("fa-eye","アイちゃんの右目<br>依存度ボーナスが増えます。","アイちゃんの右目")),
-    (,) "lefteye" (costMul 100 100000,lpsMulti 10,("fa-eye","アイちゃんの左目<br>依存度が好感度に変わる速さが速くなります。","アイちゃんの左目"))]
+    (,) "righteye" (costMul 3 100000,dependMulti 2,("fa-eye","アイちゃんの右目<br>依存度ボーナスが増えます。","アイちゃんの右目")),
+    (,) "lefteye" (costMul 3 100000,lpsMulti 2,("fa-eye","アイちゃんの左目<br>依存度が好感度に変わる速さが速くなります。","アイちゃんの左目"))]
     where
       cost b n = floor $ b * 1.25^n
       costMul r a n = floor $ a * r^n
       booster n _ = lps += n
-      dependMulti d n = dependCoeff .= d^n
-      lpsMulti d n = lpsCoeff .= d^n
+      dependMulti d n = dependCoeff += d^n
+      lpsMulti d n = lpsCoeff += d^n
 
   special = [
     (,) "monitor" (const 0,disp "monitor",("fa-power-off","さぁ始めよう<br>ゲームを始めましょう。右のボタンからこのアイテムを購入してください。","さぁ始めよう")),
-    (,) "itemshop" (const 1,disp "item-shop",("fa-shopping-cart","アイテムショップ<br>アイテムが購入できるようになります。","アイテムショップ")),
+    (,) "itemshop" (const 1,disp "itemshop",("fa-shopping-cart","アイテムショップ<br>アイテムが購入できるようになります。","アイテムショップ")),
     (,) "save" (const 0,doSave,("fa-save","セーブ<br>セーブします。","セーブ")),
-    (,) "reset" (const 10,reset,("fa-history","初期化<br>実績を除く全てのデータが初期化されます","初期化")),
-    (,) "restart" (const 100,resetAll,("fa-trash","データの消去<br>全てのデータが消去されます。この操作は取り消せません。","データの消去")),
-    (,) "night" (const 5,night,("fa-moon-o","夜<br>夜が訪れます。<br><strong>※注意 このアイテムの効果は保存されません。ブラウザがリロードされると元に戻ります。</strong>","夜"))]
+    (,) "reset" (const 10,reset,("fa-history","初期化<br>実績を除く全てのデータをリセットします。<br>今ある依存度は好感度係数に、愛情は依存度係数に加わります。","初期化"))]
+--    (,) "restart" (const 100,resetAll,("fa-trash","データの消去<br>全てのデータが消去されます。この操作は取り消せません。","データの消去"))]
+--    (,) "night" (const 5,night,("fa-moon-o","夜<br>夜が訪れます。<br><strong>※注意 このアイテムの効果は保存されません。ブラウザがリロードされると元に戻ります。</strong>","夜"))]
     where
       disp k _ = do
         withElem k $ \e -> setStyle e "display" "block"
+        withElem (printf "item-%s" k) $ \e -> setStyle e "display" "none"
         when (k == "monitor") $ lastFocus <~ liftIO getCurrentTime
-      resetAll _ = do
-        put =<< liftIO def
-        save
-        withElem "monitor" $ \e -> setStyle e "display" "none"
-        withElem "item-shop" $ \e -> setStyle e "display" "none"
       reset _ = do
         d <- liftIO def
         as <- use achieves
-        put $ d & achieves .~ as
+        lc <- (\x -> (sqrt x/10^2) * log x) <$> use depend
+        dc <- (\x -> (sqrt x/10^4) * log x) <$> use loves
+        put $ d & achieves .~ as & dependCoeff +~ dc & lpsCoeff +~ lc
         save
         withElem "monitor" $ \e -> setStyle e "display" "none"
-        withElem "item-shop" $ \e -> setStyle e "display" "none"
+        withElem "itemshop" $ \e -> setStyle e "display" "none"
       doSave _ = do
         items %= M.insert "save" 0
         save
@@ -285,26 +295,6 @@ shopItemList = normal ++ special where
 
 shopItems :: M.Map String Item
 shopItems = M.fromList shopItemList
-
-itemLi :: String -> String -> String -> String -> P.Perch
-itemLi i icon tips box = do
-  let p = "item-" ++ i
-  P.li P.! P.id p P.! P.atr "class" "list-group-item tooltips" $ do
-    P.span P.! P.atr "class" "tip" $ do
-      P.setHtml P.this tips
-    P.span P.! P.atr "class" "count" $ do
-      P.span P.! P.atr "id" (p ++ "-icon") $ do
-        P.i P.! P.atr "class" ("fa " ++ icon) $ ""
-        P.toElem " "
-      P.span P.! P.atr "id" (p ++ "-num") $ ""
-
-    P.span P.! P.atr "id" (p ++ "-box") P.! P.atr "class" "item-list" $ box
-
-    P.button P.! P.atr "type" "button" P.! P.atr "id" (p ++ "-btn") P.! P.atr "class" "btn btn-default btn-buy" $ do
-      P.i P.! P.atr "class" "fa fa-plus-circle" $ ""
-      P.toElem " "
-      P.span P.! P.atr "id" (p ++ "-cost") $ "0"
-      P.toElem " loves"
 
 humanize :: Double -> String
 humanize n = if n <= 1000 then sepComma $ take 5 $ printf "%.2f" n else sepComma $ show $ floor n
@@ -321,7 +311,6 @@ display = do
   go "lps" =<< humanize <$> use lps
   go "loves" =<< humanize <$> use loves
   go "depend" =<< humanize <$> use depend
-
   where
     go :: String -> String -> StateT Aichan IO ()
     go x u = do
@@ -358,19 +347,45 @@ displayShop = do
       setProp ecost "innerHTML" $ sepComma $ show $ c num
 
     ml <- use maxLoves
-    when (M.member i im || (fromIntegral $ c 0) <= 3*ml) $ do
+    when (i `elem` normalItemNames && (M.member i im || (fromIntegral $ c 0) <= 3*ml)) $ do
       withElem eid $ \k -> do
         a <- getStyle k "display"
         when (a /= "block") $ setStyle k "display" "block"
 
-displayTable :: StateT Aichan IO ()
-displayTable = do
+displayAchievements :: StateT Aichan IO ()
+displayAchievements = do
   as <- use achieves
-  Just t <- elemById "achievements"
-  setProp t "innerHTML" $ ("<thead><tr><th>実績名</th><th>内容</th></tr></thead>"++) $ (\s -> "<tbody>" ++ s ++ "</tbody>") $ concatMap
-    (\(a,b) -> printf "<tr><td>%s</td><td>%s</td></tr>" a b)
-    (m as)
+  qs <- stats
+  liftIO $ withElem "stats" $ P.build $ do
+    P.setHtml P.this ""
+    P.thead $ P.tr $ do
+      P.th "項目名"
+      P.th "内容"
+    P.tbody $ forM_ qs $ \(a,b) -> P.tr $ do
+      P.td a
+      P.td b
+
+  liftIO $ withElem "achievements" $ P.build $ do
+    P.setHtml P.this ""
+    P.thead $ P.tr $ do
+      P.th "実績名"
+      P.th "内容"
+    P.tbody $ forM_ (m as) $ \(a,b) -> P.tr $ do
+      P.td a
+      P.td b
+  return ()
+
   where
+    stats = do
+      g <- get
+      return $ [
+        (,) "愛情" (humanize $ g^.loves),
+        (,) "好感度(愛情/s)" (humanize $ g^.lps),
+        (,) "依存度" (humanize $ g^.depend),
+        (,) "好感度係数" (humanize $ g^.lpsCoeff),
+        (,) "依存度係数" (humanize $ g^.dependCoeff),
+        (,) "実績" (printf "%s/%s" (show $ M.size $ g^.achieves) (show $ length $ achievementList))]
+
     m as = fmap (f as) achievementList
     f as (s,_) = case M.lookup s as of
       Just (Just x) -> (s,x)
@@ -441,19 +456,27 @@ save :: StateT Aichan IO ()
 save = do
   lift . setItem saveName =<< get
   displayShop
-  displayTable
+  displayAchievements
 
 main = do
   ref <- loadItem saveName =<< def
   let (a,b) = partition (\(x,_) -> x `elem` normalItemNames) shopItemList
   withElem "list-group" $ \e -> do
     forM_ a $ \(i,(_,_,(icon,tip,box))) -> do
-      P.build (itemLi i icon tip box) e
+      P.build (itemLi ref i icon tip box) e
   withElem "list-sp-group" $ \e -> do
     forM_ b $ \(i,(_,_,(icon,tip,box))) -> do
-      P.build (itemLi i icon tip box) e
+      P.build (itemLi ref i icon tip box) e
 
   btnEvents ref $ fmap fst shopItemList
+  withElem "data-erase" $ P.build $ P.addEvent P.this OnClick $ \_ _ -> do
+    refStateT ref $ do
+      put =<< liftIO def
+      save
+      withElem "monitor" $ \e -> setStyle e "display" "none"
+      withElem "itemshop" $ \e -> setStyle e "display" "none"
+      withElem "item-monitor" $ \e -> setStyle e "display" "block"
+      withElem "item-itemshop" $ \e -> setStyle e "display" "block"
 
   let recover = ["monitor","itemshop"]
   forM_ (M.assocs $ M.filterWithKey (\k _ -> k `elem` recover) shopItems) $ \(i,t) -> do
@@ -472,7 +495,7 @@ main = do
   print q
   
   q1 <- loopStateT (floor $ 1000/titleFps) ref $ do
-    lift . setTitle =<< printf "%.2f" <$> use loves
+    lift . setTitle =<< humanize <$> use loves
   print q1
 
   q2 <- loopStateT (saveInterval * 1000) ref $ do
@@ -480,6 +503,27 @@ main = do
     putAlert "auto" "セーブしました"
   print q2
   
+itemLi :: IORef Aichan -> String -> String -> String -> String -> P.Perch
+itemLi ref i icon tips box = do
+  let p = "item-" ++ i
+  P.li P.! P.id p P.! P.atr "class" "list-group-item tooltips" $ do
+    P.span P.! P.atr "class" "tip" $ do
+      P.setHtml P.this tips
+
+    P.span P.! P.atr "class" "count" $ do
+      P.span P.! P.atr "id" (p ++ "-icon") $ do
+        P.i P.! P.atr "class" ("fa " ++ icon) $ ""
+        P.toElem " "
+      P.span P.! P.atr "id" (p ++ "-num") $ ""
+
+    P.span P.! P.atr "id" (p ++ "-box") P.! P.atr "class" "item-list" $ box
+
+    P.button P.! P.atr "type" "button" P.! P.atr "id" (p ++ "-btn") P.! P.atr "class" "btn btn-default btn-buy" $ do
+      P.i P.! P.atr "class" "fa fa-plus-circle" $ ""
+      P.toElem " "
+      P.span P.! P.atr "id" (p ++ "-cost") $ "0"
+      P.toElem " loves"
+
 btnEvents :: IORef Aichan -> [String] -> IO ()
 btnEvents _ [] = return ()
 btnEvents ref (i:is) = do
@@ -487,6 +531,9 @@ btnEvents ref (i:is) = do
   case ei of
     Just ebtn -> do
       onEvent ebtn OnClick $ \_ _ -> do
+        when (i `elem` ["reset","resetAll"]) $ do
+          k <- eval $ toJSString "window.confirm(\"この操作は取り消せません。よろしいですか？\");"
+          print k
         refStateT ref $ do
           items %= M.insertWith (+) i 1
           let (c,m,(_,_,name)) = shopItems M.! i
