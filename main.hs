@@ -280,7 +280,10 @@ shopItemList = normal ++ special where
         as <- use achieves
         lc <- (\x -> (sqrt x/10^2) * log x) <$> use depend
         dc <- (\x -> (sqrt x/10^4) * log x) <$> use loves
-        put $ d & achieves .~ as & dependCoeff +~ dc & lpsCoeff +~ lc
+        dependCoeff' <- use dependCoeff
+        lpsCoeff' <- use lpsCoeff
+
+        put $ d & achieves .~ as & dependCoeff .~ (dependCoeff' + dc) & lpsCoeff .~ (lpsCoeff' + lc)
         save
         withElem "monitor" $ \e -> setStyle e "display" "none"
         withElem "itemshop" $ \e -> setStyle e "display" "none"
